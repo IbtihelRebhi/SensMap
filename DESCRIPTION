@@ -1,0 +1,27 @@
+Package: SensMap
+Type: Package
+Title: Sensory and Consumer Data Mapping
+Version: 0.1
+Date: 2016-09-21
+Author: Rebhi Ibtihel, Boubakri Rihab, Dhafer Malouche
+Maintainer: Rebhi Ibtihel <ibtihelrebhi@yahoo.fr>
+Imports: FactoMineR, MCMCpack, factoextra, fields, gam, glmulti,
+        plotly, shiny, doBy, lattice, grDevices, graphics, stats
+Description: This package provide functions that facilitate basic sensory and consumer data analysis such as characterization
+  of products, panelists and sessions, Anova of factors effects,
+  descriptive and multivariate analysis and Internal Preference 
+  Mapping performing. It provides also EPM construction with many 
+  options on dimension reduction and with several methods of linear
+  and non linear regression models. It allows womparison of the 
+  quality of models using several criteria and by introducing
+  a new measure counting the number of predictions outside the 
+  liking scores space. This package helps drawing a  smoothed  
+  version of EPM by using local regressions to make smooth the 
+  curves of levels in the heat map. A computational method was implemented
+  as a tool to measure the quality of the stability of EPM. 
+  The shiny application provides GUI for the functionalities.
+License: GPL (>= 2)
+LazyData: TRUE
+RoxygenNote: 5.0.1
+NeedsCompilation: no
+Packaged: 2017-03-16 10:33:44 UTC; Admin
