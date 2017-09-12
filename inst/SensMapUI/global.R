@@ -1,15 +1,5 @@
-library(FactoMineR)
-library(factoextra)
-library(MASS)
-require(fields)
-library(plotly)
-library(gam)
-library(MCMCpack)
-library(plyr)
-library(lattice)
-library(ggplot2)
-library(reshape2)
-library(glmulti)
+library(mgcv)
+
 nbpoints=50
 # map PCA
 map.with.pca=function(X,axis=c(1,2)){
@@ -126,8 +116,8 @@ predict.scores.lm=function(Y,discretspace,map,
 
 
 
-# prediction with gam without from [0.10] rejection
-predict.scores.gam=function(Y,discretspace,map,formula="~s(F1,2)+s(F2,2)+s(F1*F2,2)"
+# prediction with gam with and without rejection from [0.10] 
+predict.scores.gam=function(Y,discretspace,map,formula="~s(F1,k=2)+s(F2,k=2)"
                             ,pred.na=FALSE){
   ## map is a data.frame with F1 and F2 obtained after DR on the explained data Y
   notespr= nbconsos=matrix(0,nrow(discretspace),ncol(discretspace))
@@ -172,7 +162,7 @@ predict.scores.gam=function(Y,discretspace,map,formula="~s(F1,2)+s(F2,2)+s(F1*F2
 
 
 
-# predict scores glmulti without rejection [0.10]
+# predict scores glmulti with and without rejection from [0.10]
 predict.scores.glmulti=function(Y,discretspace,map,formula="~I(F1*F1)+I(F2*F2)+F1*F2"
                                 ,pred.na=FALSE){
   ## map is a data.frame with F1 and F2 obtained after DR on the explained data Y
@@ -398,12 +388,15 @@ extract.lm=function(pred.obj,what=c("rsquare")){
   return(z)
 }
 
+
 extract.gam=function(pred.obj,what=c("rsquare")){
   if (what=="rsquare") z=unlist(lapply(pred.obj$regression,function(x)summary(x)$r.sq))
   if  (what=="fstastic") z=unlist(lapply(pred.obj$regression,function(x)coef(x) %*% solve(x$Vp) %*% coef(x)))
   if (what=="aic") z=unlist(lapply(pred.obj$regression,function(x)extractAIC(x)[2]))
   return(z)
 }
+
+
 
 extract.glm=function(pred.obj,what=c("rsquare")){
   p=length(pred.obj$regression)
@@ -517,7 +510,8 @@ denoising.loess.global = function ( Y,X,S, axis=c(1,2), discretspace,formula, di
 
 
 
-######  Distances before and after smoothing  when PCA
+######  Distances before and after LOES Smoothing  when PCA for all
+# prediction models 
 
 
 
@@ -530,7 +524,7 @@ denoising.loess.global = function ( Y,X,S, axis=c(1,2), discretspace,formula, di
     hedotrain <- hedotest <- list()
     dprob_lm <- dprob_lm_loess <- 0
     dprob_gam <- dprob_gam_loess <- 0
-   dprob_glmulti <- dprob_glmulti_loess <- 0
+   dprob_glm <- dprob_glm_loess <- 0
    dprob_bayes <- dprob_bayes_loess <- 0
 
 
@@ -647,7 +641,7 @@ denoising.loess.global = function ( Y,X,S, axis=c(1,2), discretspace,formula, di
       graph.predconso1glm=as.image(Z=z.glm1,x=discretspace,nrow=nbpoints,ncol=nbpoints) # Surface d'un seul conso
       graph.predconso2glm=as.image(Z=z.glm2,x=discretspace,nrow=nbpoints,ncol=nbpoints) # Surface d'un seul conso
 
-      dprob_glmulti[[i]]=sum((graph.surfconso1glm$z-graph.surfconso2glm$z)^2)/(nbpoints^2)
+      dprob_glm[[i]]=sum((graph.surfconso1glm$z-graph.surfconso2glm$z)^2)/(nbpoints^2)
 
 
       ## glmulti after loess
@@ -665,7 +659,7 @@ denoising.loess.global = function ( Y,X,S, axis=c(1,2), discretspace,formula, di
       graph.predconso.l.glm1=as.image(Z=z1glm.loess,x=discretspace,nrow=nbpoints,ncol=nbpoints) # Surface d'un seul conso
       graph.predconso.l.glm2=as.image(Z=z2glm.loess,x=discretspace,nrow=nbpoints,ncol=nbpoints) # Surface d'un seul conso
 
-      dprob_glmulti_loess[[i]]=sum((graph.surfconso.l.glm1$z-graph.surfconso.l.glm2$z)^2)/(nbpoints^2)
+      dprob_glm_loess[[i]]=sum((graph.surfconso.l.glm1$z-graph.surfconso.l.glm2$z)^2)/(nbpoints^2)
 
 
 
@@ -709,12 +703,12 @@ denoising.loess.global = function ( Y,X,S, axis=c(1,2), discretspace,formula, di
 
     result <- rbind(dprob_lm,dprob_lm_loess,
                     dprob_gam,dprob_gam_loess,
-                    dprob_glmulti,dprob_glmulti_loess,
+                    dprob_glm,dprob_glm_loess,
                     dprob_bayes,dprob_bayes_loess)
 
     rownames(result) <- c("dprob_lm","dprob_lm_loess",
                           "dprob_gam","dprob_gam_loess",
-                          "dprob_glmulti","dprob_glmulti_loess",
+                          "dprob_glm","dprob_glm_loess",
                           "dprob_bayes","dprob_bayes_loess")
 
 
