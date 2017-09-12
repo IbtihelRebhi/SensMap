@@ -1,29 +1,40 @@
-library(shiny)
+library(FactoMineR)
+library(factoextra)
+library(MASS)
+library(fields)
+library(plotly)
+library(mgcv)
+library(MCMCpack)
+library(plyr)
+library(lattice)
 library(ggplot2)
-require(pastecs)
+library(reshape2)
+library(glmulti)
+library(shiny)
 library(googleVis)
 library(multcomp)
 library(sjPlot)
-library(factoextra)
 library(scales)
-library(FactoMineR)
-library(plotly)
-require(fields)
-require(doBy)
+library(doBy)
 library(gridExtra)
 library(agricolae)
 library(devtools)
-library(ggbiplot)
 library(magrittr)
+library(ggbiplot)
 library(ggdendro)
 library(dendextend)
+library(grid)
+#devtools::install_github("vqv/ggbiplot")
+#install.packages("ggdendro")
+#install.packages("pastecs")
+library(pastecs)
 library(shinydashboard);
 source('global.R',local = TRUE)
 
 
 shinyServer(function(input,output,session)
 {
-
+ #### download data 
   rawInputData0<- reactive({
     rawData = input$rawInputFile
     headerTag = input$headerUI;
@@ -181,7 +192,7 @@ shinyServer(function(input,output,session)
   output$downloadav <- downloadHandler(
     filename = paste0("average_", Sys.Date(),".csv"),
     content = function(file) {
-      write.csv(mo(),file,row.names=T)
+      write.csv(mo(),file,row.names=F)
     }
   )
 
@@ -209,6 +220,7 @@ shinyServer(function(input,output,session)
     }
   )
 
+  
   cercle <- reactive({
     base=moy2()
     res <-PCA(base,ncp=2)
@@ -711,7 +723,7 @@ shinyServer(function(input,output,session)
 
   output$labelSelectUI = renderUI({
     data = rawInputData();
-      return(selectInput("modelLabelUI","Liste des variables",colnames(data),colnames(data)[1]));
+      return(selectInput("modelLabelUI","List of variables",colnames(data),colnames(data)[1]));
   });
 
   output$labelconsUI = renderUI({
@@ -826,7 +838,7 @@ shinyServer(function(input,output,session)
     if (is.null(df)) return(NULL)
     items=names(df)
     names(items)=items
-    selectInput("dependant","select response variable : ",items)
+    selectInput("dependant","Select response variable : ",items)
   });
 
 
@@ -859,7 +871,7 @@ shinyServer(function(input,output,session)
     if (is.null(df)) return(NULL)
     items=names(df)
     names(items)=items
-    selectInput("dependant","select response variable : ",items)
+    selectInput("dependant","Select response variable : ",items)
   })
 
 
@@ -1205,11 +1217,11 @@ shinyServer(function(input,output,session)
     hedo_senso=cbind.data.frame(Y[,input$interval[1]:input$interval[2]],X)
 
     res.inter=PCA(hedo_senso ,scale.unit=T,quanti.sup = (ncol(Y[,input$interval[1]:input$interval[2]])+1):ncol(hedo_senso),graph=FALSE)
-    c1=fviz_pca_ind(res.inter, axes = c(1, 2), geom = c("point","text"),jitter = list(what="Graphe des individus" ))
+    c1=fviz_pca_ind(res.inter, axes = c(1, 2), geom = c("point","text"),title="Plot of individuals" )
 
-    c2=fviz_pca_var(res.inter,invisible = "quanti.sup",geom=c( "arrow", "text"),jitter = list( width = 500, height = 500,what="Homogeniety of consumers"))
+    c3=fviz_pca_var(res.inter,invisible = "quanti.sup",geom=c( "arrow", "text"),title="Homogeniety of consumers")
 
-    c3=fviz_pca_var(res.inter,geom = "arrow",invisible ="var",jitter = list( width = 500, height = 500,what="Projection of sensory variables in supplementary"))
+    c2=fviz_pca_var(res.inter,geom = c("arrow","text"),invisible ="var",title="Projection of sensory variables")
    p=grid.arrange(c1,c2,c3,padding = unit(1, "line"),heights = 700)
    p
          })
@@ -1230,7 +1242,7 @@ shinyServer(function(input,output,session)
       dev.off(which=dev.cur())}
   )
 
-  #################
+  ################# External preference mapping
 
   output$interval1=renderUI({
     Y=consInputData()
@@ -1240,7 +1252,7 @@ shinyServer(function(input,output,session)
   })
 
   output$modelch=renderUI({
-    selectInput("modelch", "Choose type of model :",choices = c("Vector model", "Circular model","Elliptical model",
+    selectInput("modelch", "Choose type of model :",choices = c("Vector model", "Circular model","Elliptic model",
                                        "Quadratic model"))
   })
 
@@ -1250,32 +1262,32 @@ shinyServer(function(input,output,session)
   })
 
   output$Prediction_var<-renderUI({
-    selectInput("Prediction_var","Choose prediction model:",choices = c("Vector model", "Circular model","Elliptical model",
-                                                "Quadratic model", "GAM" , "GLmulti", "Bayesian model","Others"))
+    selectInput("Prediction_var","Choose prediction model:",choices = c("Vector model", "Circular model","Elliptic model",
+                                                "Quadratic model", "Generalized Additive Model" , "Generalized Linear Model", "Bayesian model","Others"))
   })
 
   output$par_var<-renderUI({
-    if(input$Prediction_var != "Bayes"){
-    selectInput("par_var","Rejection of predictions outside scores space:",choices = c("NO","YES"))}
+    if(input$Prediction_var != "Bayesian model"){
+    selectInput("par_var","If rejection of predictions outside liking scores:",choices = c("NO","YES"))}
     else{selectInput("par_var","Choose Rejection of predictions outside of [0:10]:",choices = c("NO"))}
   })
 
   output$mod1<-renderUI({
     if(input$Prediction_var == "Others"){
-    selectInput("mod1","Choose model:",choices = c("LM model","GAM" , "GLmulti", "Bayes"))}
+    selectInput("mod1","Choose type of model:",choices = c("Polynomial regression","Generalized Additive Model" , "Generalized Linear Model", "Bayesian Model"))}
     else return(NULL)
   })
 
   output$formula_lm1=renderUI({
     if(input$Prediction_var == "Others"){
-    if(input$mod1 == "LM model"){
-    textInput("formula_lm1","Input LM formula :")}
-    else if(input$mod1 == "GAM"){
-    textInput("formula_lm1","Input GAM formula :")}
-    else if(input$mod1 == "GLmulti"){
-    textInput("formula_lm1","Input GLmulti formula :")}
-    else if(input$mod1 == "Bayes"){
-    textInput("formula_lm1","Input Bayes formula :")}}
+    if(input$mod1 == "Polynomial regression"){
+    textInput("formula_lm1","Input formula for polynomial model :")}
+    else if(input$mod1 == "Generalized Additive Model"){
+    textInput("formula_lm1","Input formula for GAM :")}
+    else if(input$mod1 == "Generalized Linear Model"){
+    textInput("formula_lm1","Input formula for GLM :")}
+    else if(input$mod1 == "Bayesian Model"){
+    textInput("formula_lm1","Input formula for Bayesian model :")}}
   })
 
 
@@ -1303,7 +1315,7 @@ shinyServer(function(input,output,session)
               dimredumethod=1, predmodel=1, nbpoints=50,
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
-    else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Elliptical model" && input$par_var=="YES")
+    else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Elliptic model" && input$par_var=="YES")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)",
               dimredumethod=1, predmodel=1, nbpoints=50,
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
@@ -1313,12 +1325,12 @@ shinyServer(function(input,output,session)
               dimredumethod=1, predmodel=1, nbpoints=50,
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
-    else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="GAM" && input$par_var=="YES")
-   {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,2)+s(F2,2)+s(F1*F2,2)",
+    else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="YES")
+   {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
               dimredumethod=1, predmodel=2, nbpoints=50,
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
-    else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="GLmulti" && input$par_var=="YES")
+    else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Generalized Linear Model" && input$par_var=="YES")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
               dimredumethod=1, predmodel=3, nbpoints=50,
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
@@ -1335,7 +1347,7 @@ shinyServer(function(input,output,session)
               dimredumethod=1, predmodel=1, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
-    else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Elliptical model" && input$par_var=="NO")
+    else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Elliptic model" && input$par_var=="NO")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)",
               dimredumethod=1, predmodel=1, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
@@ -1345,17 +1357,17 @@ shinyServer(function(input,output,session)
               dimredumethod=1, predmodel=1, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
-    else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="GAM" && input$par_var=="NO")
-    {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,2)+s(F2,2)+s(F1*F2,2)",
+    else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="NO")
+    {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
               dimredumethod=1, predmodel=2, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
-    else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="GLmulti" && input$par_var=="NO")
+    else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Generalized Linear Model" && input$par_var=="NO")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
               dimredumethod=1, predmodel=3, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
-    else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Bayes" && input$par_var=="NO")
+    else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Bayesian model" && input$par_var=="NO")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
               dimredumethod=1, predmodel=4, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
@@ -1373,7 +1385,7 @@ shinyServer(function(input,output,session)
               dimredumethod=2, predmodel=1, nbpoints=50,
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
-    else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Elliptical model" && input$par_var=="YES")
+    else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Elliptic model" && input$par_var=="YES")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)",
               dimredumethod=2, predmodel=1, nbpoints=50,
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
@@ -1383,12 +1395,12 @@ shinyServer(function(input,output,session)
               dimredumethod=2, predmodel=1, nbpoints=50,
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
-    else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="GAM" && input$par_var=="YES")
-    {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,2)+s(F2,2)+s(F1*F2,2)",
+    else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="YES")
+    {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
               dimredumethod=2, predmodel=2, nbpoints=50,
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
-    else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="GLmulti" && input$par_var=="YES")
+    else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Generalized Linear Model" && input$par_var=="YES")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
               dimredumethod=2, predmodel=3, nbpoints=50,
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
@@ -1407,7 +1419,7 @@ shinyServer(function(input,output,session)
               dimredumethod=2, predmodel=1, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
-    else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Elliptical model" && input$par_var=="NO")
+    else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Elliptic model" && input$par_var=="NO")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)",
               dimredumethod=2, predmodel=1, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
@@ -1417,17 +1429,17 @@ shinyServer(function(input,output,session)
               dimredumethod=2, predmodel=1, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
-    else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="GAM" && input$par_var=="NO")
-    {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,2)+s(F2,2)+s(F1*F2,2)",
+    else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="NO")
+    {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
               dimredumethod=2, predmodel=2, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
-    else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="GLmulti" && input$par_var=="NO")
+    else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Generalized Linear Model" && input$par_var=="NO")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
               dimredumethod=2, predmodel=3, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
-    else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Bayes" && input$par_var=="NO")
+    else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Bayesian model" && input$par_var=="NO")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
               dimredumethod=2, predmodel=4, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
@@ -1444,7 +1456,7 @@ shinyServer(function(input,output,session)
               dimredumethod=3, predmodel=1, nbpoints=50,
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
-    else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Elliptical model" && input$par_var=="YES")
+    else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Elliptic model" && input$par_var=="YES")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)",
               dimredumethod=3, predmodel=1, nbpoints=50,
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
@@ -1454,12 +1466,12 @@ shinyServer(function(input,output,session)
               dimredumethod=3, predmodel=1, nbpoints=50,
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
-    else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="GAM" && input$par_var=="YES")
-    {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,2)+s(F2,2)+s(F1*F2,2)",
+    else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="YES")
+    {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
               dimredumethod=3, predmodel=2, nbpoints=50,
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
-    else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="GLmulti" && input$par_var=="YES")
+    else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Generalized Linear Model" && input$par_var=="YES")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
               dimredumethod=3, predmodel=3, nbpoints=50,
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
@@ -1476,7 +1488,7 @@ shinyServer(function(input,output,session)
               dimredumethod=3, predmodel=1, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
-    else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Elliptical model" && input$par_var=="NO")
+    else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Elliptic model" && input$par_var=="NO")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)",
               dimredumethod=3, predmodel=1, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
@@ -1486,164 +1498,164 @@ shinyServer(function(input,output,session)
               dimredumethod=3, predmodel=1, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
-    else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="GAM" && input$par_var=="NO")
-    {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,2)+s(F2,2)+s(F1*F2,2)",
+    else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="NO")
+    {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
               dimredumethod=3, predmodel=2, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
-    else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="GLmulti" && input$par_var=="NO")
+    else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Generalized Linear Model" && input$par_var=="NO")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
               dimredumethod=3, predmodel=3, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
-    else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Bayes" && input$par_var=="NO")
+    else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Bayesian model" && input$par_var=="NO")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
               dimredumethod=3, predmodel=4, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
     ###############
     else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-            &&input$mod1=="LM model")
+            &&input$mod1=="Polynomial regression")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
               dimredumethod=1, predmodel=1, nbpoints=50,
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
     else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-            &&input$mod1=="LM model")
+            &&input$mod1=="Polynomial regression")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
               dimredumethod=1, predmodel=1, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
     else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-            &&input$mod1=="GAM")
+            &&input$mod1=="Generalized Additive Model")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
               dimredumethod=1, predmodel=2, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
     else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-            &&input$mod1=="GAM")
+            &&input$mod1=="Generalized Additive Model")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
               dimredumethod=1, predmodel=2, nbpoints=50,
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
     else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-            &&input$mod1=="GLmulti")
+            &&input$mod1=="Generalized Linear Model")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
               dimredumethod=1, predmodel=3, nbpoints=50,
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
     else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-            &&input$mod1=="GLmulti")
+            &&input$mod1=="Generalized Linear Model")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
               dimredumethod=1, predmodel=3, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
     else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-            &&input$mod1=="Bayes")
+            &&input$mod1=="Bayesian model")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
               dimredumethod=1, predmodel=4, nbpoints=50,
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
     else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-            &&input$mod1=="Bayes")
+            &&input$mod1=="Bayesian model")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
               dimredumethod=1, predmodel=4, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
     #######################
     else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-            &&input$mod1=="LM model")
+            &&input$mod1=="Polynomial regression")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
               dimredumethod=2, predmodel=1, nbpoints=50,
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
     else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-            &&input$mod1=="LM model")
+            &&input$mod1=="Polynomial regression")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
               dimredumethod=2, predmodel=1, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
     else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-            &&input$mod1=="GAM")
+            &&input$mod1=="Generalized Additive Model")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
               dimredumethod=2, predmodel=2, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
     else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-            &&input$mod1=="GAM")
+            &&input$mod1=="Generalized Additive Model")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
               dimredumethod=2, predmodel=2, nbpoints=50,
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
     else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-            &&input$mod1=="GLmulti")
+            &&input$mod1=="Generalized Linear Model")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
               dimredumethod=2, predmodel=3, nbpoints=50,
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
     else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-            &&input$mod1=="GLmulti")
+            &&input$mod1=="Generalized Linear Model")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
               dimredumethod=2, predmodel=3, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
     else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-            &&input$mod1=="Bayes")
+            &&input$mod1=="Bayesian model")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
               dimredumethod=2, predmodel=4, nbpoints=50,
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
     else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-            &&input$mod1=="Bayes")
+            &&input$mod1=="Bayesian model")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
               dimredumethod=2, predmodel=4, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
     ######################
     else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-            &&input$mod1=="LM model")
+            &&input$mod1=="Polynomial regression")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
               dimredumethod=3, predmodel=1, nbpoints=50,
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
     else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-            &&input$mod1=="LM model")
+            &&input$mod1=="Polynomial regression")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
               dimredumethod=3, predmodel=1, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
     else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-            &&input$mod1=="GAM")
+            &&input$mod1=="Generalized Additive Model")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
               dimredumethod=3, predmodel=2, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
     else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-            &&input$mod1=="GAM")
+            &&input$mod1=="Generalized Additive Model")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
               dimredumethod=3, predmodel=2, nbpoints=50,
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
     else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-            &&input$mod1=="GLmulti")
+            &&input$mod1=="Generalized Linear Model")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
               dimredumethod=3, predmodel=3, nbpoints=50,
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
     else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-            &&input$mod1=="GLmulti")
+            &&input$mod1=="Generalized Linear Model")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
               dimredumethod=3, predmodel=3, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
     else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-            &&input$mod1=="Bayes")
+            &&input$mod1=="Bayesian model")
     {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
               dimredumethod=3, predmodel=4, nbpoints=50,
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
     else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-            &&input$mod1=="Bayes")
+            &&input$mod1=="Bayesian model")
     {
       drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
               dimredumethod=3, predmodel=4, nbpoints=50,
@@ -1671,7 +1683,7 @@ shinyServer(function(input,output,session)
                 dimredumethod=1, predmodel=1, nbpoints=50,
                 pred.na =TRUE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
-      else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Elliptical model" && input$par_var=="YES")
+      else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Elliptic model" && input$par_var=="YES")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)",
                 dimredumethod=1, predmodel=1, nbpoints=50,
                 pred.na =TRUE, graph.pred =T, graph.map =F,
@@ -1681,12 +1693,12 @@ shinyServer(function(input,output,session)
                 dimredumethod=1, predmodel=1, nbpoints=50,
                 pred.na =TRUE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
-      else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="GAM" && input$par_var=="YES")
-      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,2)+s(F2,2)+s(F1*F2,2)",
+      else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="YES")
+      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
                 dimredumethod=1, predmodel=2, nbpoints=50,
                 pred.na =TRUE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
-      else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="GLmulti" && input$par_var=="YES")
+      else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Generalized Linear Model" && input$par_var=="YES")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
                 dimredumethod=1, predmodel=3, nbpoints=50,
                 pred.na =TRUE, graph.pred =T, graph.map =F,
@@ -1703,7 +1715,7 @@ shinyServer(function(input,output,session)
                 dimredumethod=1, predmodel=1, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
-      else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Elliptical model" && input$par_var=="NO")
+      else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Elliptic model" && input$par_var=="NO")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)",
                 dimredumethod=1, predmodel=1, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
@@ -1713,17 +1725,17 @@ shinyServer(function(input,output,session)
                 dimredumethod=1, predmodel=1, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
-      else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="GAM" && input$par_var=="NO")
-      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~F1+F2+F1*F2",
+      else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="NO")
+      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
                 dimredumethod=1, predmodel=2, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
-      else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="GLmulti" && input$par_var=="NO")
+      else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Generalized Linear Model" && input$par_var=="NO")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
                 dimredumethod=1, predmodel=3, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
-      else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Bayes" && input$par_var=="NO")
+      else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Bayesian model" && input$par_var=="NO")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
                 dimredumethod=1, predmodel=4, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
@@ -1741,7 +1753,7 @@ shinyServer(function(input,output,session)
                 dimredumethod=2, predmodel=1, nbpoints=50,
                 pred.na =TRUE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
-      else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Elliptical model" && input$par_var=="YES")
+      else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Elliptic model" && input$par_var=="YES")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)",
                 dimredumethod=2, predmodel=1, nbpoints=50,
                 pred.na =TRUE, graph.pred =T, graph.map =F,
@@ -1751,12 +1763,12 @@ shinyServer(function(input,output,session)
                 dimredumethod=2, predmodel=1, nbpoints=50,
                 pred.na =TRUE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
-      else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="GAM" && input$par_var=="YES")
-      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,2)+s(F2,2)+s(F1*F2,2)",
+      else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="YES")
+      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
                 dimredumethod=2, predmodel=2, nbpoints=50,
                 pred.na =TRUE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
-      else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="GLmulti" && input$par_var=="YES")
+      else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Generalized Linear Model" && input$par_var=="YES")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
                 dimredumethod=2, predmodel=3, nbpoints=50,
                 pred.na =TRUE, graph.pred =T, graph.map =F,
@@ -1775,7 +1787,7 @@ shinyServer(function(input,output,session)
                 dimredumethod=2, predmodel=1, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
-      else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Elliptical model" && input$par_var=="NO")
+      else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Elliptic model" && input$par_var=="NO")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)",
                 dimredumethod=2, predmodel=1, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
@@ -1785,17 +1797,17 @@ shinyServer(function(input,output,session)
                 dimredumethod=2, predmodel=1, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
-      else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="GAM" && input$par_var=="NO")
-      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,2)+s(F2,2)+s(F1*F2,2)",
+      else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="NO")
+      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
                 dimredumethod=2, predmodel=2, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
-      else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="GLmulti" && input$par_var=="NO")
+      else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Generalized Linear Model" && input$par_var=="NO")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
                 dimredumethod=2, predmodel=3, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
-      else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Bayes" && input$par_var=="NO")
+      else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Bayesian model" && input$par_var=="NO")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
                 dimredumethod=2, predmodel=4, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
@@ -1812,7 +1824,7 @@ shinyServer(function(input,output,session)
                 dimredumethod=3, predmodel=1, nbpoints=50,
                 pred.na =TRUE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
-      else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Elliptical model" && input$par_var=="YES")
+      else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Elliptic model" && input$par_var=="YES")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)",
                 dimredumethod=3, predmodel=1, nbpoints=50,
                 pred.na =TRUE, graph.pred =T, graph.map =F,
@@ -1822,12 +1834,12 @@ shinyServer(function(input,output,session)
                 dimredumethod=3, predmodel=1, nbpoints=50,
                 pred.na =TRUE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
-      else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="GAM" && input$par_var=="YES")
-      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,2)+s(F2,2)+s(F1*F2,2)",
+      else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="YES")
+      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
                 dimredumethod=3, predmodel=2, nbpoints=50,
                 pred.na =TRUE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
-      else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="GLmulti" && input$par_var=="YES")
+      else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Generalized Linear Model" && input$par_var=="YES")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
                 dimredumethod=3, predmodel=3, nbpoints=50,
                 pred.na =TRUE, graph.pred =T, graph.map =F,
@@ -1844,7 +1856,7 @@ shinyServer(function(input,output,session)
                 dimredumethod=3, predmodel=1, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
-      else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Elliptical model" && input$par_var=="NO")
+      else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Elliptic model" && input$par_var=="NO")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)",
                 dimredumethod=3, predmodel=1, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
@@ -1854,17 +1866,17 @@ shinyServer(function(input,output,session)
                 dimredumethod=3, predmodel=1, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
-      else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="GAM" && input$par_var=="NO")
-      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,2)+s(F2,2)+s(F1*F2,2)",
+      else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="NO")
+      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
                 dimredumethod=3, predmodel=2, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
-      else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="GLmulti" && input$par_var=="NO")
+      else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Generalized Linear Model" && input$par_var=="NO")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
                 dimredumethod=3, predmodel=3, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
-      else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Bayes" && input$par_var=="NO")
+      else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Bayesian model" && input$par_var=="NO")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
                 dimredumethod=3, predmodel=4, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
@@ -1873,147 +1885,147 @@ shinyServer(function(input,output,session)
       ##################
       #################
       else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-              &&input$mod1=="LM model")
+              &&input$mod1=="Polynomial regression")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=1, predmodel=1, nbpoints=50,
                 pred.na =TRUE, graph.pred =TRUE, graph.map =FALSE,
                 graph.map.3D =FALSE )}
       else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-              &&input$mod1=="LM model")
+              &&input$mod1=="Polynomial regression")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=1, predmodel=1, nbpoints=50,
                 pred.na =FALSE, graph.pred =TRUE, graph.map =FALSE,
                 graph.map.3D =FALSE )}
       else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-              &&input$mod1=="GAM")
+              &&input$mod1=="Generalized Additive Model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=1, predmodel=2, nbpoints=50,
                 pred.na =FALSE, graph.pred =TRUE, graph.map =FALSE,
                 graph.map.3D =FALSE )}
       else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-              &&input$mod1=="GAM")
+              &&input$mod1=="Generalized Additive Model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=1, predmodel=2, nbpoints=50,
                 pred.na =TRUE, graph.pred =TRUE, graph.map =FALSE,
                 graph.map.3D =FALSE )}
       else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-              &&input$mod1=="GLmulti")
+              &&input$mod1=="Generalized Linear Model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=1, predmodel=3, nbpoints=50,
                 pred.na =TRUE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
       else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-              &&input$mod1=="GLmulti")
+              &&input$mod1=="Generalized Linear Model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=1, predmodel=3, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
       else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-              &&input$mod1=="Bayes")
+              &&input$mod1=="Bayesian model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=1, predmodel=4, nbpoints=50,
                 pred.na =TRUE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
       else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-              &&input$mod1=="Bayes")
+              &&input$mod1=="Bayesian model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=1, predmodel=4, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
       #######################
       else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-              &&input$mod1=="LM model")
+              &&input$mod1=="Polynomial regression")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=2, predmodel=1, nbpoints=50,
                 pred.na =TRUE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
       else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-              &&input$mod1=="LM model")
+              &&input$mod1=="Polynomial regression")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=2, predmodel=1, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
       else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-              &&input$mod1=="GAM")
+              &&input$mod1=="Generalized Additive Model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=2, predmodel=2, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
       else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-              &&input$mod1=="GAM")
+              &&input$mod1=="Generalized Additive Model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=2, predmodel=2, nbpoints=50,
                 pred.na =TRUE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
       else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-              &&input$mod1=="GLmulti")
+              &&input$mod1=="Generalized Linear Model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=2, predmodel=3, nbpoints=50,
                 pred.na =TRUE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
       else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-              &&input$mod1=="GLmulti")
+              &&input$mod1=="Generalized Linear Model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=2, predmodel=3, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
       else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-              &&input$mod1=="Bayes")
+              &&input$mod1=="Bayesian model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=2, predmodel=4, nbpoints=50,
                 pred.na =TRUE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
       else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-              &&input$mod1=="Bayes")
+              &&input$mod1=="Bayesian model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=2, predmodel=4, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
       ######################
       else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-              &&input$mod1=="LM model")
+              &&input$mod1=="Polynomial regression")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=3, predmodel=1, nbpoints=50,
                 pred.na =TRUE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
       else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-              &&input$mod1=="LM model")
+              &&input$mod1=="Polynomial regression")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=3, predmodel=1, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
       else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-              &&input$mod1=="GAM")
+              &&input$mod1=="Generalized Additive Model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=3, predmodel=2, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
       else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-              &&input$mod1=="GAM")
+              &&input$mod1=="Generalized Additive Model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=3, predmodel=2, nbpoints=50,
                 pred.na =TRUE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
       else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-              &&input$mod1=="GLmulti")
+              &&input$mod1=="Generalized Linear Model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=3, predmodel=3, nbpoints=50,
                 pred.na =TRUE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
       else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-              &&input$mod1=="GLmulti")
+              &&input$mod1=="Generalized Linear Model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=3, predmodel=3, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
       else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-              &&input$mod1=="Bayes")
+              &&input$mod1=="Bayesian model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=3, predmodel=4, nbpoints=50,
                 pred.na =TRUE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
       else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-              &&input$mod1=="Bayes")
+              &&input$mod1=="Bayesian model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=3, predmodel=4, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
@@ -2041,7 +2053,7 @@ shinyServer(function(input,output,session)
                 pred.na =TRUE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )
        }
-      else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Elliptical model" && input$par_var=="YES")
+      else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Elliptic model" && input$par_var=="YES")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)",
                 dimredumethod=1, predmodel=1, nbpoints=50,
                 pred.na =TRUE, graph.pred =F, graph.map =F,
@@ -2051,12 +2063,12 @@ shinyServer(function(input,output,session)
                 dimredumethod=1, predmodel=1, nbpoints=50,
                 pred.na =TRUE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
-      else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="GAM" && input$par_var=="YES")
-      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,2)+s(F2,2)+s(F1*F2,2)",
+      else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="YES")
+      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
                 dimredumethod=1, predmodel=2, nbpoints=50,
                 pred.na =TRUE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
-      else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="GLmulti" && input$par_var=="YES")
+      else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Generalized Linear Model" && input$par_var=="YES")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
                 dimredumethod=1, predmodel=3, nbpoints=50,
                 pred.na =TRUE, graph.pred =F, graph.map =F,
@@ -2073,7 +2085,7 @@ shinyServer(function(input,output,session)
                 dimredumethod=1, predmodel=1, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
-      else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Elliptical model" && input$par_var=="NO")
+      else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Elliptic model" && input$par_var=="NO")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)",
                 dimredumethod=1, predmodel=1, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
@@ -2083,17 +2095,17 @@ shinyServer(function(input,output,session)
                 dimredumethod=1, predmodel=1, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
-      else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="GAM" && input$par_var=="NO")
-      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,2)+s(F2,2)+s(F1*F2,2)",
+      else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="NO")
+      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
                 dimredumethod=1, predmodel=2, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
-      else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="GLmulti" && input$par_var=="NO")
+      else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Generalized Linear Model" && input$par_var=="NO")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
                 dimredumethod=1, predmodel=3, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
-      else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Bayes" && input$par_var=="NO")
+      else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Bayesian model" && input$par_var=="NO")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
                 dimredumethod=1, predmodel=4, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
@@ -2111,7 +2123,7 @@ shinyServer(function(input,output,session)
                 dimredumethod=2, predmodel=1, nbpoints=50,
                 pred.na =TRUE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
-      else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Elliptical model" && input$par_var=="YES")
+      else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Elliptic model" && input$par_var=="YES")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)",
                 dimredumethod=2, predmodel=1, nbpoints=50,
                 pred.na =TRUE, graph.pred =F, graph.map =F,
@@ -2121,12 +2133,12 @@ shinyServer(function(input,output,session)
                 dimredumethod=2, predmodel=1, nbpoints=50,
                 pred.na =TRUE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
-      else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="GAM" && input$par_var=="YES")
-      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,2)+s(F2,2)+s(F1*F2,2)",
+      else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="YES")
+      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
                 dimredumethod=2, predmodel=2, nbpoints=50,
                 pred.na =TRUE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
-      else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="GLmulti" && input$par_var=="YES")
+      else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Generalized Linear Model" && input$par_var=="YES")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
                 dimredumethod=2, predmodel=3, nbpoints=50,
                 pred.na =TRUE, graph.pred =F, graph.map =F,
@@ -2145,7 +2157,7 @@ shinyServer(function(input,output,session)
                 dimredumethod=2, predmodel=1, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
-      else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Elliptical model" && input$par_var=="NO")
+      else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Elliptic model" && input$par_var=="NO")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)",
                 dimredumethod=2, predmodel=1, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
@@ -2155,17 +2167,17 @@ shinyServer(function(input,output,session)
                 dimredumethod=2, predmodel=1, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
-      else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="GAM" && input$par_var=="NO")
-      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,2)+s(F2,2)+s(F1*F2,2)",
+      else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="NO")
+      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
                 dimredumethod=2, predmodel=2, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
-      else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="GLmulti" && input$par_var=="NO")
+      else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Generalized Linear Model" && input$par_var=="NO")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
                 dimredumethod=2, predmodel=3, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
-      else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Bayes" && input$par_var=="NO")
+      else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Bayesian model" && input$par_var=="NO")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
                 dimredumethod=2, predmodel=4, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
@@ -2182,7 +2194,7 @@ shinyServer(function(input,output,session)
                 dimredumethod=3, predmodel=1, nbpoints=50,
                 pred.na =TRUE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
-      else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Elliptical model" && input$par_var=="YES")
+      else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Elliptic model" && input$par_var=="YES")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)",
                 dimredumethod=3, predmodel=1, nbpoints=50,
                 pred.na =TRUE, graph.pred =F, graph.map =F,
@@ -2192,12 +2204,12 @@ shinyServer(function(input,output,session)
                 dimredumethod=3, predmodel=1, nbpoints=50,
                 pred.na =TRUE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
-      else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="GAM" && input$par_var=="YES")
-      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,2)+s(F2,2)+s(F1*F2,2)",
+      else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="YES")
+      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
                 dimredumethod=3, predmodel=2, nbpoints=50,
                 pred.na =TRUE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
-      else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="GLmulti" && input$par_var=="YES")
+      else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Generalized Linear Model" && input$par_var=="YES")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
                 dimredumethod=3, predmodel=3, nbpoints=50,
                 pred.na =TRUE, graph.pred =F, graph.map =F,
@@ -2214,7 +2226,7 @@ shinyServer(function(input,output,session)
                 dimredumethod=3, predmodel=1, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
-      else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Elliptical model" && input$par_var=="NO")
+      else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Elliptic model" && input$par_var=="NO")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)",
                 dimredumethod=3, predmodel=1, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
@@ -2224,17 +2236,17 @@ shinyServer(function(input,output,session)
                 dimredumethod=3, predmodel=1, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
-      else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="GAM" && input$par_var=="NO")
-      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,2)+s(F2,2)+s(F1*F2,2)",
+      else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="NO")
+      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
                 dimredumethod=3, predmodel=2, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
-      else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="GLmulti" && input$par_var=="NO")
+      else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Generalized Linear Model" && input$par_var=="NO")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
                 dimredumethod=3, predmodel=3, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
-      else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Bayes" && input$par_var=="NO")
+      else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Bayesian model" && input$par_var=="NO")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
                 dimredumethod=3, predmodel=4, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
@@ -2242,147 +2254,147 @@ shinyServer(function(input,output,session)
       ##################
       #################
       else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-              &&input$mod1=="LM model")
+              &&input$mod1=="Polynomial regression")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=1, predmodel=1, nbpoints=50,
                 pred.na =TRUE, graph.pred =F, graph.map =FALSE,
                 graph.map.3D =T )}
       else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-              &&input$mod1=="LM model")
+              &&input$mod1=="Polynomial regression")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=1, predmodel=1, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =FALSE,
                 graph.map.3D =T )}
       else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-              &&input$mod1=="GAM")
+              &&input$mod1=="Generalized Additive Model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=1, predmodel=2, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =FALSE,
                 graph.map.3D =T)}
       else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-              &&input$mod1=="GAM")
+              &&input$mod1=="Generalized Additive Model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=1, predmodel=2, nbpoints=50,
                 pred.na =TRUE, graph.pred =F, graph.map =FALSE,
                 graph.map.3D =T )}
       else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-              &&input$mod1=="GLmulti")
+              &&input$mod1=="Generalized Linear Model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=1, predmodel=3, nbpoints=50,
                 pred.na =TRUE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
       else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-              &&input$mod1=="GLmulti")
+              &&input$mod1=="Generalized Linear Model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=1, predmodel=3, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
       else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-              &&input$mod1=="Bayes")
+              &&input$mod1=="Bayesian model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=1, predmodel=4, nbpoints=50,
                 pred.na =TRUE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
       else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-              &&input$mod1=="Bayes")
+              &&input$mod1=="Bayesian model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=1, predmodel=4, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
       #######################
       else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-              &&input$mod1=="LM model")
+              &&input$mod1=="Polynomial regression")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=2, predmodel=1, nbpoints=50,
                 pred.na =TRUE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
       else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-              &&input$mod1=="LM model")
+              &&input$mod1=="Polynomial regression")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=2, predmodel=1, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
       else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-              &&input$mod1=="GAM")
+              &&input$mod1=="Generalized Additive Model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=2, predmodel=2, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
       else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-              &&input$mod1=="GAM")
+              &&input$mod1=="Generalized Additive Model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=2, predmodel=2, nbpoints=50,
                 pred.na =TRUE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
       else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-              &&input$mod1=="GLmulti")
+              &&input$mod1=="Generalized Linear Model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=2, predmodel=3, nbpoints=50,
                 pred.na =TRUE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
       else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-              &&input$mod1=="GLmulti")
+              &&input$mod1=="Generalized Linear Model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=2, predmodel=3, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
       else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-              &&input$mod1=="Bayes")
+              &&input$mod1=="Bayesian model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=2, predmodel=4, nbpoints=50,
                 pred.na =TRUE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
       else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-              &&input$mod1=="Bayes")
+              &&input$mod1=="Bayesian model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=2, predmodel=4, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
       ######################
       else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-              &&input$mod1=="LM model")
+              &&input$mod1=="Polynomial regression")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=3, predmodel=1, nbpoints=50,
                 pred.na =TRUE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
       else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-              &&input$mod1=="LM model")
+              &&input$mod1=="Polynomial regression")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=3, predmodel=1, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
       else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-              &&input$mod1=="GAM")
+              &&input$mod1=="Generalized Additive Model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=3, predmodel=2, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
       else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-              &&input$mod1=="GAM")
+              &&input$mod1=="Generalized Additive Model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=3, predmodel=2, nbpoints=50,
                 pred.na =TRUE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
       else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-              &&input$mod1=="GLmulti")
+              &&input$mod1=="Generalized Linear Model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=3, predmodel=3, nbpoints=50,
                 pred.na =TRUE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
       else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-              &&input$mod1=="GLmulti")
+              &&input$mod1=="Generalized Linear Model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=3, predmodel=3, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
       else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Others" && input$par_var=="YES"
-              &&input$mod1=="Bayes")
+              &&input$mod1=="Bayesian model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=3, predmodel=4, nbpoints=50,
                 pred.na =TRUE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
       else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Others" && input$par_var=="NO"
-              &&input$mod1=="Bayes")
+              &&input$mod1=="Bayesian model")
       {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula=input$formula_lm1,
                 dimredumethod=3, predmodel=4, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
@@ -2392,14 +2404,15 @@ shinyServer(function(input,output,session)
 
 
 
+    ####### Results of models selection
 
     output$Dimension_var1<-renderUI({
       selectInput("Dimension_var1","Choose dimension reduction method:",choices = c("Principal Component Analysis", "Multiple Factor Analysis", "Canonical Analysis"))
     })
 
     output$Prediction_var1<-renderUI({
-      selectInput("Prediction_var1","Choose prediction model:",choices = c("Vector model", "Circular model","Elliptical model",
-                                                                          "Quadratic model", "GAM" , "GLmulti"))
+      selectInput("Prediction_var1","Choose prediction model:",choices = c("Vector model", "Circular model","Elliptic model",
+                                                                          "Quadratic model", "Generalized Additive Model" , "Generalized Linear Model"))
     })
 
     output$aic<-renderUI({
@@ -2414,8 +2427,8 @@ shinyServer(function(input,output,session)
       X=moy2()
       S=moy4()
       nbpoints=50
-      if(input$aic=="AIC" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptical model"
-                              ||input$Prediction_var1=="Quadratic model"||input$Prediction_var1=="GAM"||input$Prediction_var1=="GLmulti") &&
+      if(input$aic=="AIC" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptic model"
+                              ||input$Prediction_var1=="Quadratic model"||input$Prediction_var1=="Generalized Additive Model"||input$Prediction_var1=="Generalized Linear Model") &&
          input$Dimension_var1== "Principal Component Analysis"){
         map=map.with.pca(X)
         maps=cbind.data.frame(map$F1,map$F2)
@@ -2424,7 +2437,7 @@ shinyServer(function(input,output,session)
         discretspace=discrete.function(map = maps)
         x.lm=predict.scores.lm(Y = Y,discretspace = discretspace,map = maps)
         x.vect=predict.scores.lm(Y = Y,formula="~F1+F2",discretspace = discretspace,map = maps)
-        x.circ=predict.scores.lm(Y = Y,formula="~ F1 + F2 + (F1*F1 + F2*F2)",discretspace = discretspace,map = maps)
+        x.circ=predict.scores.lm(Y = Y,formula="~F1 + F2 + (F1*F1 + F2*F2)",discretspace = discretspace,map = maps)
         x.ellip=predict.scores.lm(Y = Y,formula="~I(F1*F1)+I(F2*F2)",discretspace = discretspace,map = maps)
         x.gam=predict.scores.gam(Y = Y,discretspace = discretspace,map = maps)
         x.glm=predict.scores.glmulti(Y = Y,discretspace = discretspace,map = maps)
@@ -2438,20 +2451,20 @@ shinyServer(function(input,output,session)
 
         x1=c(1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y))
         x2=c(aic.lm,aic.vect,aic.circ,aic.ellip,aic.gam,aic.glm)
-        x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLMulti",ncol(Y)))
+        x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLM",ncol(Y)))
         dt=cbind.data.frame(x1,x2,x3)
         colnames(dt)=c("consumer","AIC","model")
         library(ggplot2)
         gr<-ggplot(dt,aes(x=consumer,y=AIC,col=model))+geom_line()+xlab("Consumers")+ylab("AIC")+
-          ggtitle( "Comparison prediction models from PCA")
+          ggtitle( "Comparison of AIC of prediction models from PCA")
         gr+theme_bw()+ theme(plot.title = element_text(size=16, hjust = 0.5,face="bold"))+
           geom_smooth()
 
 
       }
 
-      else if(input$aic=="AIC" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptical model"
-                              ||input$Prediction_var1=="Quadratic model"||input$Prediction_var1=="GAM"||input$Prediction_var1=="GLmulti") &&
+      else if(input$aic=="AIC" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptic model"
+                              ||input$Prediction_var1=="Quadratic model"||input$Prediction_var1=="Generalized Additive Model"||input$Prediction_var1=="Generalized Linear Model") &&
          input$Dimension_var1== "Multiple Factor Analysis"){
         map=map.with.mfa(X,Y,axis=c(1,2))
         maps=cbind.data.frame(map$F1,map$F2)
@@ -2473,18 +2486,18 @@ shinyServer(function(input,output,session)
         aic.glm=extract.glm(x.glm,what=c("aic"))## ???
         x1=c(1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y))
         x2=c(aic.lm,aic.vect,aic.circ,aic.ellip,aic.gam,aic.glm)
-        x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLMulti",ncol(Y)))
+        x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLM",ncol(Y)))
         dt=cbind.data.frame(x1,x2,x3)
         colnames(dt)=c("consumer","AIC","model")
 
         gr1<-ggplot(dt,aes(x=consumer,y=AIC,col=model))+geom_line()+xlab("Consumers")+ylab("AIC")+
-          ggtitle( "Comparison of prediction models from MFA ")
+          ggtitle( "Comparison of AIC of prediction models from MFA ")
         gr1+theme_bw()+ theme(plot.title = element_text(size=16, hjust = 0.5,face="bold"))+
           geom_smooth()
 
       }
-      else if(input$aic=="AIC" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptical model"
-                                   ||input$Prediction_var1=="Quadratic model"||input$Prediction_var1=="GAM"||input$Prediction_var1=="GLmulti") &&
+      else if(input$aic=="AIC" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptic model"
+                                   ||input$Prediction_var1=="Quadratic model"||input$Prediction_var1=="Generalized Additive Model"||input$Prediction_var1=="Generalized Linear Model") &&
               input$Dimension_var1== "Canonical Analysis"){
 
         map=map.with.ca(X,S,Y)
@@ -2507,19 +2520,19 @@ shinyServer(function(input,output,session)
         aic.glm=extract.glm(x.glm,what=c("aic"))## ???
         x1=c(1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y))
         x2=c(aic.lm,aic.vect,aic.circ,aic.ellip,aic.gam,aic.glm)
-        x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLMulti",ncol(Y)))
+        x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLM",ncol(Y)))
         dt=cbind.data.frame(x1,x2,x3)
         colnames(dt)=c("consumer","AIC","model")
 
         gr2<-ggplot(dt,aes
                     (x=consumer,y=AIC,col=model))+geom_line()+xlab("Consumers")+ylab("AIC")+
-          ggtitle( "Comparison of prediction models from CA ")
+          ggtitle( "Comparison of AIC of prediction models from CA ")
         gr2+theme_bw()+ theme(plot.title = element_text(size=16, hjust = 0.5,face="bold"))+
           geom_smooth()
       }
 
-      else if(input$aic=="R2" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptical model"
-                                   ||input$Prediction_var1=="Quadratic model"||input$Prediction_var1=="GAM"||input$Prediction_var1=="GLmulti") &&
+      else if(input$aic=="R2" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptic model"
+                                   ||input$Prediction_var1=="Quadratic model"||input$Prediction_var1=="Generalized Additive Model"||input$Prediction_var1=="GLM") &&
               input$Dimension_var1== "Principal Component Analysis"){
         map=map.with.pca(X)
         maps=cbind.data.frame(map$F1,map$F2)
@@ -2531,9 +2544,7 @@ shinyServer(function(input,output,session)
         x.circ=predict.scores.lm(Y = Y,formula="~ F1 + F2 + (F1*F1 + F2*F2)",discretspace = discretspace,map = maps)
         x.ellip=predict.scores.lm(Y = Y,formula="~I(F1*F1)+I(F2*F2)",discretspace = discretspace,map = maps)
         x.glm=predict.scores.glmulti(Y = Y,discretspace = discretspace,map = maps)
-
-        library(mgcv)
-        x.gam=predict.scores.gam(Y = Y,discretspace = discretspace,map = maps, formula="~F1+F2+F1*F2")
+        x.gam=predict.scores.gam(Y = Y,discretspace = discretspace,map = maps)
 
 
         r2.lm=extract.lm(x.lm,what=c("rsquare"))
@@ -2544,19 +2555,19 @@ shinyServer(function(input,output,session)
         r2.glm=extract.gam(x.glm,what=c("rsquare"))
         x1=c(1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y))
         x2=c(r2.lm,r2.vect,r2.circ,r2.ellip,r2.gam,r2.glm)
-        x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLMulti",ncol(Y)))
+        x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLM",ncol(Y)))
         dt=cbind.data.frame(x1,x2,x3)
         colnames(dt)=c("consumer","Rsquared","model")
-        detach(package:mgcv)
+        
         gr2<-ggplot(dt,aes
          (x=consumer,y=Rsquared,col=model))+geom_line()+xlab("Consumers")+ylab("Rsquared")+
-          ggtitle( "Comparison of prediction models from PCA ")
+          ggtitle( "Comparison of R2 of prediction models from PCA ")
         gr2+theme_bw()+ theme(plot.title = element_text(size=16, hjust = 0.5,face="bold"))+
           geom_smooth()
 
       }
-      else if(input$aic=="R2" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptical model"
-                                   ||input$Prediction_var1=="Quadratic model"||input$Prediction_var1=="GAM"||input$Prediction_var1=="GLmulti") &&
+      else if(input$aic=="R2" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptic model"
+                                   ||input$Prediction_var1=="Quadratic model"||input$Prediction_var1=="Generalized Additive Model"||input$Prediction_var1=="Generalized Linear Model") &&
               input$Dimension_var1== "Multiple Factor Analysis"){
         ## If R2 and  MFA
         map=map.with.mfa(X,Y,axis=c(1,2))
@@ -2569,9 +2580,7 @@ shinyServer(function(input,output,session)
         x.circ=predict.scores.lm(Y = Y,formula="~ F1 + F2 + (F1*F1 + F2*F2)",discretspace = discretspace,map = maps)
         x.ellip=predict.scores.lm(Y = Y,formula="~I(F1*F1)+I(F2*F2)",discretspace = discretspace,map = maps)
         x.glm=predict.scores.glmulti(Y = Y,discretspace = discretspace,map = maps)
-
-        library(mgcv)
-        x.gam=predict.scores.gam(Y = Y,discretspace = discretspace,map = maps, formula="~F1+F2+F1*F2")
+        x.gam=predict.scores.gam(Y = Y,discretspace = discretspace,map = maps)
 
 
         r2.lm=extract.lm(x.lm,what=c("rsquare"))
@@ -2582,18 +2591,18 @@ shinyServer(function(input,output,session)
         r2.glm=extract.gam(x.glm,what=c("rsquare"))
         x1=c(1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y))
         x2=c(r2.lm,r2.vect,r2.circ,r2.ellip,r2.gam,r2.glm)
-        x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLMulti",ncol(Y)))
+        x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("Generalized Additive Model",ncol(Y)),rep("Generalized Linear Model",ncol(Y)))
         dt=cbind.data.frame(x1,x2,x3)
         colnames(dt)=c("consumer","Rsquared","model")
-        detach(package:mgcv)
+        
         gr2<-ggplot(dt,aes
                     (x=consumer,y=Rsquared,col=model))+geom_line()+xlab("Consumers")+ylab("Rsquared")+
-          ggtitle( "Comparison of prediction models from MFA ")
+          ggtitle( "Comparison of R2 of prediction models from MFA ")
         gr2+theme_bw()+ theme(plot.title = element_text(size=16, hjust = 0.5,face="bold"))+
           geom_smooth()
       }
-      else if(input$aic=="R2" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptical model"
-                                   ||input$Prediction_var1=="Quadratic model"||input$Prediction_var1=="GAM"||input$Prediction_var1=="GLmulti") &&
+      else if(input$aic=="R2" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptic model"
+                                   ||input$Prediction_var1=="Quadratic model"||input$Prediction_var1=="Generalized Additive Model"||input$Prediction_var1=="Generalized Linear Model") &&
               input$Dimension_var1== "Canonical Analysis"){
         ## If R2 and  CA
         map=map.with.ca(X,S,Y)
@@ -2606,9 +2615,7 @@ shinyServer(function(input,output,session)
         x.circ=predict.scores.lm(Y = Y,formula="~ F1 + F2 + (F1*F1 + F2*F2)",discretspace = discretspace,map = maps)
         x.ellip=predict.scores.lm(Y = Y,formula="~I(F1*F1)+I(F2*F2)",discretspace = discretspace,map = maps)
         x.glm=predict.scores.glmulti(Y = Y,discretspace = discretspace,map = maps)
-
-        library(mgcv)
-        x.gam=predict.scores.gam(Y = Y,discretspace = discretspace,map = maps, formula="~F1+F2+F1*F2")
+        x.gam=predict.scores.gam(Y = Y,discretspace = discretspace,map = maps)
 
 
         r2.lm=extract.lm(x.lm,what=c("rsquare"))
@@ -2619,19 +2626,19 @@ shinyServer(function(input,output,session)
         r2.glm=extract.gam(x.glm,what=c("rsquare"))
         x1=c(1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y))
         x2=c(r2.lm,r2.vect,r2.circ,r2.ellip,r2.gam,r2.glm)
-        x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLMulti",ncol(Y)))
+        x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLM",ncol(Y)))
         dt=cbind.data.frame(x1,x2,x3)
         colnames(dt)=c("consumer","Rsquared","model")
-        detach(package:mgcv)
+        
         gr2<-ggplot(dt,aes
                     (x=consumer,y=Rsquared,col=model))+geom_line()+xlab("Consumers")+ylab("Rsquared")+
-          ggtitle( "Comparison of prediction models from CA ")
+          ggtitle( "Comparison of R2 of prediction models from CA ")
         gr2+theme_bw()+ theme(plot.title = element_text(size=16, hjust = 0.5,face="bold"))+
           geom_smooth()
       }
 
-      else if(input$aic=="Fstat" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptical model"
-                                  ||input$Prediction_var1=="Quadratic model"||input$Prediction_var1=="GAM"||input$Prediction_var1=="GLmulti") &&
+      else if(input$aic=="Fstat" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptic model"
+                                  ||input$Prediction_var1=="Quadratic model"||input$Prediction_var1=="Generalized Additive Model"||input$Prediction_var1=="Generalized Linear Model") &&
               input$Dimension_var1== "Principal Component Analysis"){
         map=map.with.pca(X)
         maps=cbind.data.frame(map$F1,map$F2)
@@ -2640,13 +2647,10 @@ shinyServer(function(input,output,session)
         discretspace=discrete.function(map = maps)
         x.lm=predict.scores.lm(Y = Y,discretspace = discretspace,map = maps)
         x.vect=predict.scores.lm(Y = Y,formula="~F1+F2",discretspace = discretspace,map = maps)
-        x.circ=predict.scores.lm(Y = Y,formula="~ F1 + F2 + (F1*F1 + F2*F2)",discretspace = discretspace,map = maps)
+        x.circ=predict.scores.lm(Y = Y,formula="~F1 + F2 + (F1*F1 + F2*F2)",discretspace = discretspace,map = maps)
         x.ellip=predict.scores.lm(Y = Y,formula="~I(F1*F1)+I(F2*F2)",discretspace = discretspace,map = maps)
         x.glm=predict.scores.glmulti(Y = Y,discretspace = discretspace,map = maps)
-
-
-        library(mgcv)
-        x.gam=predict.scores.gam(Y = Y,discretspace = discretspace,map = maps, formula="~F1+F2+F1*F2")
+        x.gam=predict.scores.gam(Y = Y,discretspace = discretspace,map = maps)
 
 
         f.lm=extract.lm(x.lm,what=c("fstastic"))
@@ -2660,19 +2664,18 @@ shinyServer(function(input,output,session)
 
         x1=c(1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y))
         x2=c(f.lm,f.vect,f.circ,f.ellip,f.gam,f.glm)
-        x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLMulti",ncol(Y)))
+        x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLM",ncol(Y)))
         x2=unlist(x2)
         dt=cbind.data.frame(x1,x2,x3)
         colnames(dt)=c("consumer","Fstat","model")
-        detach(package:mgcv)
         gr2<-ggplot(dt,aes
                     (x=consumer,y=Fstat,col=model))+geom_line()+xlab("Consumers")+ylab("Fstatistic")+
-          ggtitle( "Comparison of prediction models from PCA ")
+          ggtitle( "Comparison of Fstat of prediction models from PCA ")
         gr2+theme_bw()+ theme(plot.title = element_text(size=16, hjust = 0.5,face="bold"))+
           geom_smooth()
       }
-      else if(input$aic=="Fstat" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptical model"
-                                    ||input$Prediction_var1=="Quadratic model"||input$Prediction_var1=="GAM"||input$Prediction_var1=="GLmulti") &&
+      else if(input$aic=="Fstat" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptic model"
+                                    ||input$Prediction_var1=="Quadratic model"||input$Prediction_var1=="Generalized Additive Model"||input$Prediction_var1=="Generalized Linear Model") &&
                 input$Dimension_var1== "Multiple Factor Analysis"){
         map=map.with.mfa(X,Y,axis=c(1,2))
         maps=cbind.data.frame(map$F1,map$F2)
@@ -2684,10 +2687,7 @@ shinyServer(function(input,output,session)
         x.circ=predict.scores.lm(Y = Y,formula="~ F1 + F2 + (F1*F1 + F2*F2)",discretspace = discretspace,map = maps)
         x.ellip=predict.scores.lm(Y = Y,formula="~I(F1*F1)+I(F2*F2)",discretspace = discretspace,map = maps)
         x.glm=predict.scores.glmulti(Y = Y,discretspace = discretspace,map = maps)
-
-
-        library(mgcv)
-        x.gam=predict.scores.gam(Y = Y,discretspace = discretspace,map = maps, formula="~F1+F2+F1*F2")
+        x.gam=predict.scores.gam(Y = Y,discretspace = discretspace,map = maps)
 
 
         f.lm=extract.lm(x.lm,what=c("fstastic"))
@@ -2701,19 +2701,19 @@ shinyServer(function(input,output,session)
 
         x1=c(1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y))
         x2=c(f.lm,f.vect,f.circ,f.ellip,f.gam,f.glm)
-        x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLMulti",ncol(Y)))
+        x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLM",ncol(Y)))
         x2=unlist(x2)
         dt=cbind.data.frame(x1,x2,x3)
         colnames(dt)=c("consumer","Fstat","model")
-        detach(package:mgcv)
+        
         gr2<-ggplot(dt,aes
                     (x=consumer,y=Fstat,col=model))+geom_line()+xlab("Consumers")+ylab("Fstatistic")+
-          ggtitle( "Comparison of prediction models from MFA")
+          ggtitle( "Comparison of Fstat of prediction models from MFA")
         gr2+theme_bw()+ theme(plot.title = element_text(size=16, hjust = 0.5,face="bold"))+
           geom_smooth()
       }
-      else if(input$aic=="Fstat" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptical model"
-                                    ||input$Prediction_var1=="Quadratic model"||input$Prediction_var1=="GAM"||input$Prediction_var1=="GLmulti") &&
+      else if(input$aic=="Fstat" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptic model"
+                                    ||input$Prediction_var1=="Quadratic model"||input$Prediction_var1=="Generalized Additive Model"||input$Prediction_var1=="Generalized Linear Model") &&
                 input$Dimension_var1== "Canonical Analysis"){
         ## If fstat and CA
         map=map.with.ca(X,S,Y)
@@ -2726,10 +2726,7 @@ shinyServer(function(input,output,session)
         x.circ=predict.scores.lm(Y = Y,formula="~ F1 + F2 + (F1*F1 + F2*F2)",discretspace = discretspace,map = maps)
         x.ellip=predict.scores.lm(Y = Y,formula="~I(F1*F1)+I(F2*F2)",discretspace = discretspace,map = maps)
         x.glm=predict.scores.glmulti(Y = Y,discretspace = discretspace,map = maps)
-
-
-        library(mgcv)
-       x.gam=predict.scores.gam(Y = Y,discretspace = discretspace,map = maps, formula="~F1+F2+F1*F2")
+        x.gam=predict.scores.gam(Y = Y,discretspace = discretspace,map = maps)
 
 
 
@@ -2744,22 +2741,22 @@ shinyServer(function(input,output,session)
 
         x1=c(1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y))
         x2=c(f.lm,f.vect,f.circ,f.ellip,f.gam,f.glm)
-        x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLMulti",ncol(Y)))
+        x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLM",ncol(Y)))
         x2=unlist(x2)
         dt=cbind.data.frame(x1,x2,x3)
         colnames(dt)=c("consumer","Fstat","model")
-        detach(package:mgcv)
+        
         gr2<-ggplot(dt,aes
                     (x=consumer,y=Fstat,col=model))+geom_line()+xlab("Consumers")+ylab("Fstatistic")+
-          ggtitle( "Comparison of prediction models from CA ")
+          ggtitle( "Comparison of Fstat of prediction models from CA ")
         gr2+theme_bw()+ theme(plot.title = element_text(size=16, hjust = 0.5,face="bold"))+
           geom_smooth()
       }
 
       ###########
 
-      else if(input$aic=="nb-NA" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptical model"
-                                  ||input$Prediction_var1=="Quadratic model"||input$Prediction_var1=="GAM"||input$Prediction_var1=="GLmulti") &&
+      else if(input$aic=="nb-NA" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptic model"
+                                  ||input$Prediction_var1=="Quadratic model"||input$Prediction_var1=="Generalized Additive Model"||input$Prediction_var1=="Generalized Linear Model") &&
               input$Dimension_var1== "Principal Component Analysis"){
         map=map.with.pca(X) # pour mfa et ca tu changes cette commande
         maps=cbind.data.frame(map$F1,map$F2)
@@ -2801,11 +2798,11 @@ shinyServer(function(input,output,session)
         nb.ellip=as.data.frame(nb.ellip)
 
         # gam
-        library(mgcv)
+     
         x.gam=predict.scores.gam(Y = Y,discretspace = discretspace,
-                                 formula="~F1+F2+F1*F2",map = maps,
+                                 map = maps,
                                  pred.na=TRUE)
-        detach("package:mgcv"  )
+     
 
         nb.gam=x.gam$nb.NA
         nb.gam=unlist(nb.gam)
@@ -2827,20 +2824,20 @@ shinyServer(function(input,output,session)
         x1=c(1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y))
         x2=c(nb.quad,nb.vect,nb.circ,nb.ellip,nb.gam,nb.glm)
         x2=melt(x2)
-        x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLMulti",ncol(Y)))
+        x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLM",ncol(Y)))
         dt=cbind.data.frame(x1,x2[,1],x3)
         colnames(dt)=c("consumer","occur.na","model")
 
         gr2<-ggplot(dt,aes
                     (x=model,y=occur.na ,fill=model))+geom_boxplot()+xlab("Consumers")+ylab("Occurence of NA")+
-          ggtitle( "Comparison of prediction models from PCA ")
+          ggtitle( "Comparison of nb-NA of prediction models from PCA ")
         gr2+theme_bw()+ theme(plot.title = element_text(size=16, hjust = 0.5,face="bold"))
 
       }
       ##################
 
-      else if(input$aic=="nb-NA" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptical model"
-                                     ||input$Prediction_var1=="Quadratic model"||input$Prediction_var1=="GAM"||input$Prediction_var1=="GLmulti") &&
+      else if(input$aic=="nb-NA" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptic model"
+                                     ||input$Prediction_var1=="Quadratic model"||input$Prediction_var1=="Generalized Additive Model"||input$Prediction_var1=="Generalized Linear Model") &&
               input$Dimension_var1== "Multiple Factor Analysis"){
         map=map.with.mfa(X,Y,axis=c(1,2)) # pour mfa et ca tu changes cette commande
         maps=cbind.data.frame(map$F1,map$F2)
@@ -2882,11 +2879,11 @@ shinyServer(function(input,output,session)
         nb.ellip=as.data.frame(nb.ellip)
 
         # gam
-        library(mgcv)
+
         x.gam=predict.scores.gam(Y = Y,discretspace = discretspace,
-                                 formula="~F1+F2+F1*F2",map = maps,
+                                 map = maps,
                                  pred.na=TRUE)
-        detach("package:mgcv"  )
+
 
         nb.gam=x.gam$nb.NA
         nb.gam=unlist(nb.gam)
@@ -2908,21 +2905,21 @@ shinyServer(function(input,output,session)
         x1=c(1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y))
         x2=c(nb.quad,nb.vect,nb.circ,nb.ellip,nb.gam,nb.glm)
         x2=melt(x2)
-        x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLMulti",ncol(Y)))
+        x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLM",ncol(Y)))
         dt=cbind.data.frame(x1,x2[,1],x3)
         colnames(dt)=c("consumer","occur.na","model")
 
         gr2<-ggplot(dt,aes
                     (x=model,y=occur.na ,fill=model))+geom_boxplot()+xlab("Consumers")+ylab("Occurence of NA")+
-          ggtitle( "Comparison of prediction models from MFA ")
+          ggtitle( "Comparison of nb-NA of prediction models from MFA ")
         gr2+theme_bw()+ theme(plot.title = element_text(size=16, hjust = 0.5,face="bold"))
 
       }
 
       ############
 
-      else if(input$aic=="nb-NA" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptical model"
-                                     ||input$Prediction_var1=="Quadratic model"||input$Prediction_var1=="GAM"||input$Prediction_var1=="GLmulti") &&
+      else if(input$aic=="nb-NA" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptic model"
+                                     ||input$Prediction_var1=="Quadratic model"||input$Prediction_var1=="Generalized Additive Model"||input$Prediction_var1=="Generalized Linear Model") &&
               input$Dimension_var1== "Canonical Analysis"){
         map=map.with.ca(X,S,Y) # pour mfa et ca tu changes cette commande
         maps=cbind.data.frame(map$F1,map$F2)
@@ -2964,11 +2961,10 @@ shinyServer(function(input,output,session)
         nb.ellip=as.data.frame(nb.ellip)
 
         # gam
-        library(mgcv)
         x.gam=predict.scores.gam(Y = Y,discretspace = discretspace,
-                                 formula="~F1+F2+F1*F2",map = maps,
+                                 map = maps,
                                  pred.na=TRUE)
-        detach("package:mgcv"  )
+
 
         nb.gam=x.gam$nb.NA
         nb.gam=unlist(nb.gam)
@@ -2990,13 +2986,13 @@ shinyServer(function(input,output,session)
         x1=c(1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y))
         x2=c(nb.quad,nb.vect,nb.circ,nb.ellip,nb.gam,nb.glm)
         x2=melt(x2)
-        x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLMulti",ncol(Y)))
+        x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLM",ncol(Y)))
         dt=cbind.data.frame(x1,x2[,1],x3)
         colnames(dt)=c("consumer","occur.na","model")
 
         gr2<-ggplot(dt,aes
                     (x=model,y=occur.na ,fill=model))+geom_boxplot()+xlab("Consumers")+ylab("Occurence of NA")+
-          ggtitle( "Comparison of prediction models from CA ")
+          ggtitle( "Comparison of nb-NA of prediction models from CA ")
         gr2+theme_bw()+ theme(plot.title = element_text(size=16, hjust = 0.5,face="bold"))
       }
       })
@@ -3017,39 +3013,39 @@ shinyServer(function(input,output,session)
         dev.off(which=dev.cur())}
     )
 
-
+   ###### EPM smoothing
 
     output$Dimension_var3<-renderUI({
       selectInput("Dimension_var3","Choose dimension reduction method:",choices = c("Principal Component Analysis", "Multiple Factor Analysis", "Canonical Analysis"))
     })
 
     output$Prediction_var3<-renderUI({
-      selectInput("Prediction_var3","Choose prediction model:",choices = c("Vector model", "Circular model","Elliptical model",
-                     "Quadratic model", "GAM" , "GLmulti", "Bayes","Others"))
+      selectInput("Prediction_var3","Choose prediction model:",choices = c("Vector model", "Circular model","Elliptic model",
+                     "Quadratic model", "Generalized Additive Model" , "Generalized Linear Model", "Bayesian model","Others"))
     })
 
     output$mod2<-renderUI({
       if(input$Prediction_var3 == "Others"){
-        selectInput("mod2","Choose model:",choices = c("LM model","GAM" , "GLmulti", "Bayes"))}
+        selectInput("mod2","Choose type of model:",choices = c("Polynomial model","GAM" , "GLM", "Bayesian model"))}
       else return(NULL)
     })
 
     output$formula_lm2=renderUI({
       if(input$Prediction_var3 == "Others"){
-        if(input$mod2 == "LM model"){
-          textInput("formula_lm2","Input LM formula :")}
+        if(input$mod2 == "Polynomial model"){
+          textInput("formula_lm2","Input formula for polynomial model :")}
         else if(input$mod2 == "GAM"){
-          textInput("formula_lm2","Input GAM formula :")}
-        else if(input$mod2 == "GLmulti"){
-          textInput("formula_lm2","Input GLmulti formula :")}
-        else if(input$mod2 == "Bayes"){
-          textInput("formula_lm2","Input Bayes formula :")}}
+          textInput("formula_lm2","Input formula for GAM :")}
+        else if(input$mod2 == "GLM"){
+          textInput("formula_lm2","Input formula for GLM :")}
+        else if(input$mod2 == "Bayesian model"){
+          textInput("formula_lm2","Input formula for Bayesian model :")}}
     })
 
     output$par_var3<-renderUI({
-      if(input$Prediction_var3 != "Bayes"){
-        selectInput("par_var3","Choose Rejection of predictions outside of [0:10]:",choices = c("NO","YES"))}
-      else{selectInput("par_var3","Choose Rejection of predictions outside of [0:10]:",choices = c("NO"))}
+      if(input$Prediction_var3 != "Bayesian model"){
+        selectInput("par_var3","If rejection of predictions outside of [0:10]:",choices = c("NO","YES"))}
+      else{selectInput("par_var3","If rejection of predictions outside of [0:10]:",choices = c("NO"))}
     })
 
     output$interval3=renderUI({
@@ -3087,7 +3083,7 @@ shinyServer(function(input,output,session)
                                  formula="~ F1 + F2 + (F1*F1 + F2*F2)", dimredumethod=1,
                                  predmodel=1, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=TRUE,dmap.loess=FALSE)}
-      else if(input$Dimension_var3=="Principal Component Analysis" && input$Prediction_var3=="Elliptical model" && input$par_var3=="YES")
+      else if(input$Dimension_var3=="Principal Component Analysis" && input$Prediction_var3=="Elliptic model" && input$par_var3=="YES")
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)",
                 dimredumethod=1, predmodel=1, nbpoints=50,
@@ -3107,17 +3103,17 @@ shinyServer(function(input,output,session)
                                  formula="~I(F1*F1)+I(F2*F2)+F1*F2", dimredumethod=1,
                                  predmodel=1, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=TRUE,dmap.loess=FALSE)}
-      else if(input$Dimension_var3=="Principal Component Analysis" && input$Prediction_var3=="GAM" && input$par_var3=="YES")
-      {par(mfrow = c(1, 2))
-        a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~s(F1,2)+s(F2,2)+s(F1*F2,2)",
+      else if(input$Dimension_var3=="Principal Component Analysis" && input$Prediction_var3=="Generalized Additive Model" && input$par_var3=="YES")
+      {par(mfrow = c(1,2))
+        a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
                 dimredumethod=1, predmodel=2, nbpoints=50,
                 pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
                 graph.map.3D =FALSE )
         b=denoising.loess.global(X,Y[,input$interval3[1]:input$interval3[2]],S, axis=c(1,2), discretspace=discretspace,
-                                 formula="~F1+F2+F1*F2", dimredumethod=1,
+                                 formula="~s(F1,k=2)+s(F2,k=2)", dimredumethod=1,
                                  predmodel=2, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=TRUE,dmap.loess=FALSE)}
-      else if(input$Dimension_var3=="Principal Component Analysis" && input$Prediction_var3=="GLmulti" && input$par_var3=="YES")
+      else if(input$Dimension_var3=="Principal Component Analysis" && input$Prediction_var3=="Generalized Linear Model" && input$par_var3=="YES")
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
                 dimredumethod=1, predmodel=3, nbpoints=50,
@@ -3149,7 +3145,7 @@ shinyServer(function(input,output,session)
                                  formula="~ F1 + F2 + (F1*F1 + F2*F2)", dimredumethod=1,
                                  predmodel=1, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=FALSE,dmap.loess=FALSE)}
-      else if(input$Dimension_var3=="Principal Component Analysis" && input$Prediction_var3=="Elliptical model" && input$par_var3=="NO")
+      else if(input$Dimension_var3=="Principal Component Analysis" && input$Prediction_var3=="Elliptic model" && input$par_var3=="NO")
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)",
                 dimredumethod=1, predmodel=1, nbpoints=50,
@@ -3169,17 +3165,17 @@ shinyServer(function(input,output,session)
                                  formula="~I(F1*F1)+I(F2*F2)+F1*F2", dimredumethod=1,
                                  predmodel=1, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=FALSE,dmap.loess=FALSE)}
-      else if(input$Dimension_var3=="Principal Component Analysis" && input$Prediction_var3=="GAM" && input$par_var3=="NO")
+      else if(input$Dimension_var3=="Principal Component Analysis" && input$Prediction_var3=="Generalized Additive Model" && input$par_var3=="NO")
       {par(mfrow = c(1, 2))
-        a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~s(F1,2)+s(F2,2)+s(F1*F2,2)",
+        a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
                 dimredumethod=1, predmodel=2, nbpoints=50,
                 pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
                 graph.map.3D =FALSE )
         b=denoising.loess.global(X,Y[,input$interval3[1]:input$interval3[2]],S, axis=c(1,2), discretspace=discretspace,
-                                 formula="~F1+F2+F1*F2", dimredumethod=1,
+                                 formula="~s(F1,k=2)+s(F2,k=2)", dimredumethod=1,
                                  predmodel=2, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=FALSE,dmap.loess=FALSE)}
-      else if(input$Dimension_var3=="Principal Component Analysis" && input$Prediction_var3=="GLmulti" && input$par_var3=="NO")
+      else if(input$Dimension_var3=="Principal Component Analysis" && input$Prediction_var3=="Generalized Linear Model" && input$par_var3=="NO")
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
                 dimredumethod=1, predmodel=3, nbpoints=50,
@@ -3189,7 +3185,7 @@ shinyServer(function(input,output,session)
                                  formula="~I(F1*F1)+I(F2*F2)+F1*F2", dimredumethod=1,
                                  predmodel=3, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=FALSE,dmap.loess=FALSE)}
-      else if(input$Dimension_var3=="Principal Component Analysis" && input$Prediction_var3=="Bayes" && input$par_var3=="NO")
+      else if(input$Dimension_var3=="Principal Component Analysis" && input$Prediction_var3=="Bayesian model" && input$par_var3=="NO")
       {par(mfrow = c(1, 2))
         a=drawmap (Y,X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
                 dimredumethod=1, predmodel=4, nbpoints=50,
@@ -3222,7 +3218,7 @@ shinyServer(function(input,output,session)
                                  formula="~ F1 + F2 + (F1*F1 + F2*F2)", dimredumethod=2,
                                  predmodel=1, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=TRUE,dmap.loess=FALSE)}
-      else if(input$Dimension_var3=="Multiple Factor Analysis" && input$Prediction_var3=="Elliptical model" && input$par_var3=="YES")
+      else if(input$Dimension_var3=="Multiple Factor Analysis" && input$Prediction_var3=="Elliptic model" && input$par_var3=="YES")
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)",
                 dimredumethod=2, predmodel=1, nbpoints=50,
@@ -3242,17 +3238,17 @@ shinyServer(function(input,output,session)
                                  formula="~I(F1*F1)+I(F2*F2)+F1*F2", dimredumethod=2,
                                  predmodel=1, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=TRUE,dmap.loess=FALSE)}
-      else if(input$Dimension_var3=="Multiple Factor Analysis" && input$Prediction_var3=="GAM" && input$par_var3=="YES")
+      else if(input$Dimension_var3=="Multiple Factor Analysis" && input$Prediction_var3=="Generalized Additive Model" && input$par_var3=="YES")
       {par(mfrow = c(1, 2))
-        a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~s(F1,2)+s(F2,2)+s(F1*F2,2)",
+        a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
                 dimredumethod=2, predmodel=2, nbpoints=50,
                 pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
                 graph.map.3D =FALSE )
         b=denoising.loess.global(X,Y[,input$interval3[1]:input$interval3[2]],S, axis=c(1,2), discretspace=discretspace,
-                                 formula="~F1+F2+F1*F2", dimredumethod=2,
+                                 formula="~s(F1,k=2)+s(F2,k=2)", dimredumethod=2,
                                  predmodel=2, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=TRUE,dmap.loess=FALSE)}
-      else if(input$Dimension_var3=="Multiple Factor Analysis" && input$Prediction_var3=="GLmulti" && input$par_var3=="YES")
+      else if(input$Dimension_var3=="Multiple Factor Analysis" && input$Prediction_var3=="Generalized Linear Model" && input$par_var3=="YES")
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
                 dimredumethod=2, predmodel=3, nbpoints=50,
@@ -3285,7 +3281,7 @@ shinyServer(function(input,output,session)
                                  formula="~ F1 + F2 + (F1*F1 + F2*F2)", dimredumethod=2,
                                  predmodel=1, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=FALSE,dmap.loess=FALSE)}
-      else if(input$Dimension_var3=="Multiple Factor Analysis" && input$Prediction_var3=="Elliptical model" && input$par_var3=="NO")
+      else if(input$Dimension_var3=="Multiple Factor Analysis" && input$Prediction_var3=="Elliptic model" && input$par_var3=="NO")
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)",
                 dimredumethod=2, predmodel=1, nbpoints=50,
@@ -3305,17 +3301,17 @@ shinyServer(function(input,output,session)
                                  formula="~I(F1*F1)+I(F2*F2)+F1*F2", dimredumethod=2,
                                  predmodel=1, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=FALSE,dmap.loess=FALSE)}
-      else if(input$Dimension_var3=="Multiple Factor Analysis" && input$Prediction_var3=="GAM" && input$par_var3=="NO")
+      else if(input$Dimension_var3=="Multiple Factor Analysis" && input$Prediction_var3=="Generalized Additive Model" && input$par_var3=="NO")
       {par(mfrow = c(1, 2))
-        a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~s(F1,2)+s(F2,2)+s(F1*F2,2)",
+        a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
                 dimredumethod=2, predmodel=2, nbpoints=50,
                 pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
                 graph.map.3D =FALSE )
         b=denoising.loess.global(X,Y[,input$interval3[1]:input$interval3[2]],S, axis=c(1,2), discretspace=discretspace,
-                                 formula="~F1+F2+F1*F2", dimredumethod=2,
+                                 formula="~s(F1,k=2)+s(F2,k=2)", dimredumethod=2,
                                  predmodel=2, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=FALSE,dmap.loess=FALSE)}
-      else if(input$Dimension_var3=="Multiple Factor Analysis" && input$Prediction_var3=="GLmulti" && input$par_var3=="NO")
+      else if(input$Dimension_var3=="Multiple Factor Analysis" && input$Prediction_var3=="Generalized Linear Model" && input$par_var3=="NO")
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
                 dimredumethod=2, predmodel=3, nbpoints=50,
@@ -3325,7 +3321,7 @@ shinyServer(function(input,output,session)
                                  formula="~I(F1*F1)+I(F2*F2)+F1*F2", dimredumethod=2,
                                  predmodel=3, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=FALSE,dmap.loess=FALSE)}
-      else if(input$Dimension_var3=="Multiple Factor Analysis" && input$Prediction_var3=="Bayes" && input$par_var3=="NO")
+      else if(input$Dimension_var3=="Multiple Factor Analysis" && input$Prediction_var3=="Bayesian model" && input$par_var3=="NO")
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
                 dimredumethod=2, predmodel=4, nbpoints=50,
@@ -3359,7 +3355,7 @@ shinyServer(function(input,output,session)
                                  formula="~ F1 + F2 + (F1*F1 + F2*F2)", dimredumethod=3,
                                  predmodel=1, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=TRUE,dmap.loess=FALSE)}
-      else if(input$Dimension_var3=="Canonical Analysis" && input$Prediction_var3=="Elliptical model" && input$par_var3=="YES")
+      else if(input$Dimension_var3=="Canonical Analysis" && input$Prediction_var3=="Elliptic model" && input$par_var3=="YES")
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)",
                 dimredumethod=3, predmodel=1, nbpoints=50,
@@ -3379,17 +3375,17 @@ shinyServer(function(input,output,session)
                                  formula="~I(F1*F1)+I(F2*F2)+F1*F2", dimredumethod=3,
                                  predmodel=1, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=TRUE,dmap.loess=FALSE)}
-      else if(input$Dimension_var3=="Canonical Analysis" && input$Prediction_var3=="GAM" && input$par_var3=="YES")
+      else if(input$Dimension_var3=="Canonical Analysis" && input$Prediction_var3=="Generalized Additive Model" && input$par_var3=="YES")
       {par(mfrow = c(1, 2))
-        a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~s(F1,2)+s(F2,2)+s(F1*F2,2)",
+        a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
                 dimredumethod=3, predmodel=2, nbpoints=50,
                 pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
                 graph.map.3D =FALSE )
         b=denoising.loess.global(X,Y[,input$interval3[1]:input$interval3[2]],S, axis=c(1,2), discretspace=discretspace,
-                                 formula="~F1+F2+F1*F2", dimredumethod=3,
+                                 formula="~s(F1,k=2)+s(F2,k=2)", dimredumethod=3,
                                  predmodel=2, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=TRUE,dmap.loess=FALSE)}
-      else if(input$Dimension_var3=="Canonical Analysis" && input$Prediction_var3=="GLmulti" && input$par_var3=="YES")
+      else if(input$Dimension_var3=="Canonical Analysis" && input$Prediction_var3=="Generalized Linear Model" && input$par_var3=="YES")
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
                 dimredumethod=3, predmodel=3, nbpoints=50,
@@ -3421,7 +3417,7 @@ shinyServer(function(input,output,session)
                                  formula="~ F1 + F2 + (F1*F1 + F2*F2)", dimredumethod=3,
                                  predmodel=1, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=FALSE,dmap.loess=FALSE)}
-      else if(input$Dimension_var3=="Canonical Analysis" && input$Prediction_var3=="Elliptical model" && input$par_var3=="NO")
+      else if(input$Dimension_var3=="Canonical Analysis" && input$Prediction_var3=="Elliptic model" && input$par_var3=="NO")
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)",
                 dimredumethod=3, predmodel=1, nbpoints=50,
@@ -3442,17 +3438,17 @@ shinyServer(function(input,output,session)
                                  formula="~I(F1*F1)+I(F2*F2)+F1*F2", dimredumethod=3,
                                  predmodel=1, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=FALSE,dmap.loess=FALSE)}
-      else if(input$Dimension_var3=="Canonical Analysis" && input$Prediction_var3=="GAM" && input$par_var3=="NO")
+      else if(input$Dimension_var3=="Canonical Analysis" && input$Prediction_var3=="Generalized Additive Model" && input$par_var3=="NO")
       {par(mfrow = c(1, 2))
-        a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~s(F1,2)+s(F2,2)+s(F1*F2,2)",
+        a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
                 dimredumethod=3, predmodel=2, nbpoints=50,
                 pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
                 graph.map.3D =FALSE )
         b=denoising.loess.global(X,Y[,input$interval3[1]:input$interval3[2]],S, axis=c(1,2), discretspace=discretspace,
-                                 formula="~F1+F2+F1*F2", dimredumethod=3,
+                                 formula="~s(F1,k=2)+s(F2,k=2)", dimredumethod=3,
                                  predmodel=2, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=FALSE,dmap.loess=FALSE)}
-      else if(input$Dimension_var3=="Canonical Analysis" && input$Prediction_var3=="GLmulti" && input$par_var3=="NO")
+      else if(input$Dimension_var3=="Canonical Analysis" && input$Prediction_var3=="Generalized Linear Model" && input$par_var3=="NO")
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
                 dimredumethod=3, predmodel=3, nbpoints=50,
@@ -3462,7 +3458,7 @@ shinyServer(function(input,output,session)
                                  formula="~I(F1*F1)+I(F2*F2)+F1*F2", dimredumethod=3,
                                  predmodel=3, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=FALSE,dmap.loess=FALSE)}
-      else if(input$Dimension_var3=="Canonical Analysis" && input$Prediction_var3=="Bayes" && input$par_var3=="NO")
+      else if(input$Dimension_var3=="Canonical Analysis" && input$Prediction_var3=="Bayesian model" && input$par_var3=="NO")
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
                 dimredumethod=3, predmodel=4, nbpoints=50,
@@ -3475,7 +3471,7 @@ shinyServer(function(input,output,session)
 
       #######################
       else if(input$Dimension_var3=="Principal Component Analysis" && input$Prediction_var3=="Others" && input$par_var3=="NO" &&
-             input$mod2=="LM model" )
+             input$mod2=="Polynomial regression" )
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula=input$formula_lm2,
                    dimredumethod=1, predmodel=1, nbpoints=50,
@@ -3486,7 +3482,7 @@ shinyServer(function(input,output,session)
                                  predmodel=1, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=FALSE,dmap.loess=FALSE)}
       else if(input$Dimension_var3=="Principal Component Analysis" && input$Prediction_var3=="Others" && input$par_var3=="YES" &&
-              input$mod2=="LM model" )
+              input$mod2=="Polynomial regression" )
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula=input$formula_lm2,
                    dimredumethod=1, predmodel=1, nbpoints=50,
@@ -3508,7 +3504,7 @@ shinyServer(function(input,output,session)
                                  predmodel=2, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=FALSE,dmap.loess=FALSE)}
       else if(input$Dimension_var3=="Principal Component Analysis" && input$Prediction_var3=="Others" && input$par_var3=="YES" &&
-              input$mod2=="GAM" )
+              input$mod2=="Generalized Additive Model" )
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula=input$formula_lm2,
                    dimredumethod=1, predmodel=2, nbpoints=50,
@@ -3520,7 +3516,7 @@ shinyServer(function(input,output,session)
                                  pred.na=TRUE,dmap.loess=FALSE)}
 
       else if(input$Dimension_var3=="Principal Component Analysis" && input$Prediction_var3=="Others" && input$par_var3=="NO" &&
-              input$mod2=="GLmulti" )
+              input$mod2=="Generalized Linear Model" )
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula=input$formula_lm2,
                    dimredumethod=1, predmodel=3, nbpoints=50,
@@ -3531,7 +3527,7 @@ shinyServer(function(input,output,session)
                                  predmodel=3, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=FALSE,dmap.loess=FALSE)}
       else if(input$Dimension_var3=="Principal Component Analysis" && input$Prediction_var3=="Others" && input$par_var3=="YES" &&
-              input$mod2=="GLmulti" )
+              input$mod2=="Generalized Linear Model" )
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula=input$formula_lm2,
                    dimredumethod=1, predmodel=3, nbpoints=50,
@@ -3543,7 +3539,7 @@ shinyServer(function(input,output,session)
                                  pred.na=TRUE,dmap.loess=FALSE)}
 
       else if(input$Dimension_var3=="Principal Component Analysis" && input$Prediction_var3=="Others" && input$par_var3=="NO" &&
-              input$mod2=="Bayes" )
+              input$mod2=="Bayesian model" )
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula=input$formula_lm2,
                    dimredumethod=1, predmodel=4, nbpoints=50,
@@ -3554,7 +3550,7 @@ shinyServer(function(input,output,session)
                                  predmodel=4, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=FALSE,dmap.loess=FALSE)}
       else if(input$Dimension_var3=="Principal Component Analysis" && input$Prediction_var3=="Others" && input$par_var3=="YES" &&
-              input$mod2=="Bayes" )
+              input$mod2=="Bayesian model" )
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula=input$formula_lm2,
                    dimredumethod=1, predmodel=4, nbpoints=50,
@@ -3569,7 +3565,7 @@ shinyServer(function(input,output,session)
 
       #######################
       else if(input$Dimension_var3=="Multiple Factor Analysis" && input$Prediction_var3=="Others" && input$par_var3=="NO" &&
-              input$mod2=="LM model" )
+              input$mod2=="Polynomial regression" )
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula=input$formula_lm2,
                    dimredumethod=2, predmodel=1, nbpoints=50,
@@ -3580,7 +3576,7 @@ shinyServer(function(input,output,session)
                                  predmodel=1, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=FALSE,dmap.loess=FALSE)}
       else if(input$Dimension_var3=="Multiple Factor Analysis" && input$Prediction_var3=="Others" && input$par_var3=="YES" &&
-              input$mod2=="LM model" )
+              input$mod2=="Polynomial regression" )
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula=input$formula_lm2,
                    dimredumethod=2, predmodel=1, nbpoints=50,
@@ -3591,7 +3587,7 @@ shinyServer(function(input,output,session)
                                  predmodel=1, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=TRUE,dmap.loess=FALSE)}
       else if(input$Dimension_var3=="Multiple Factor Analysis" && input$Prediction_var3=="Others" && input$par_var3=="NO" &&
-              input$mod2=="GAM" )
+              input$mod2=="Generalized Additive Model" )
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula=input$formula_lm2,
                    dimredumethod=2, predmodel=2, nbpoints=50,
@@ -3602,7 +3598,7 @@ shinyServer(function(input,output,session)
                                  predmodel=2, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=FALSE,dmap.loess=FALSE)}
       else if(input$Dimension_var3=="Multiple Factor Analysis" && input$Prediction_var3=="Others" && input$par_var3=="YES" &&
-              input$mod2=="GAM" )
+              input$mod2=="Generalized Additive Model" )
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula=input$formula_lm2,
                    dimredumethod=2, predmodel=2, nbpoints=50,
@@ -3614,7 +3610,7 @@ shinyServer(function(input,output,session)
                                  pred.na=TRUE,dmap.loess=FALSE)}
 
       else if(input$Dimension_var3=="Multiple Factor Analysis" && input$Prediction_var3=="Others" && input$par_var3=="NO" &&
-              input$mod2=="GLmulti" )
+              input$mod2=="Generalized Linear Model" )
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula=input$formula_lm2,
                    dimredumethod=2, predmodel=3, nbpoints=50,
@@ -3625,7 +3621,7 @@ shinyServer(function(input,output,session)
                                  predmodel=3, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=FALSE,dmap.loess=FALSE)}
       else if(input$Dimension_var3=="Multiple Factor Analysis" && input$Prediction_var3=="Others" && input$par_var3=="YES" &&
-              input$mod2=="GLmulti" )
+              input$mod2=="Generalized Linear Model" )
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula=input$formula_lm2,
                    dimredumethod=2, predmodel=3, nbpoints=50,
@@ -3637,7 +3633,7 @@ shinyServer(function(input,output,session)
                                  pred.na=TRUE,dmap.loess=FALSE)}
 
       else if(input$Dimension_var3=="Multiple Factor Analysis" && input$Prediction_var3=="Others" && input$par_var3=="NO" &&
-              input$mod2=="Bayes" )
+              input$mod2=="Bayesian model" )
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula=input$formula_lm2,
                    dimredumethod=2, predmodel=4, nbpoints=50,
@@ -3648,7 +3644,7 @@ shinyServer(function(input,output,session)
                                  predmodel=4, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=FALSE,dmap.loess=FALSE)}
       else if(input$Dimension_var3=="Multiple Factor Analysis" && input$Prediction_var3=="Others" && input$par_var3=="YES" &&
-              input$mod2=="Bayes" )
+              input$mod2=="Bayesian model" )
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula=input$formula_lm2,
                    dimredumethod=2, predmodel=4, nbpoints=50,
@@ -3662,7 +3658,7 @@ shinyServer(function(input,output,session)
 
       #######################
       else if(input$Dimension_var3=="Canonical Analysis" && input$Prediction_var3=="Others" && input$par_var3=="NO" &&
-              input$mod2=="LM model" )
+              input$mod2=="Polynomial regression" )
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula=input$formula_lm2,
                    dimredumethod=3, predmodel=1, nbpoints=50,
@@ -3673,7 +3669,7 @@ shinyServer(function(input,output,session)
                                  predmodel=1, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=FALSE,dmap.loess=FALSE)}
       else if(input$Dimension_var3=="Canonical Analysis" && input$Prediction_var3=="Others" && input$par_var3=="YES" &&
-              input$mod2=="LM model" )
+              input$mod2=="Polynomial regression" )
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula=input$formula_lm2,
                    dimredumethod=3, predmodel=1, nbpoints=50,
@@ -3684,7 +3680,7 @@ shinyServer(function(input,output,session)
                                  predmodel=1, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=TRUE,dmap.loess=FALSE)}
       else if(input$Dimension_var3=="Canonical Analysis" && input$Prediction_var3=="Others" && input$par_var3=="NO" &&
-              input$mod2=="GAM" )
+              input$mod2=="Generalized Additive Model" )
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula=input$formula_lm2,
                    dimredumethod=3, predmodel=2, nbpoints=50,
@@ -3695,7 +3691,7 @@ shinyServer(function(input,output,session)
                                  predmodel=2, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=FALSE,dmap.loess=FALSE)}
       else if(input$Dimension_var3=="Canonical Analysis" && input$Prediction_var3=="Others" && input$par_var3=="YES" &&
-              input$mod2=="GAM" )
+              input$mod2=="Generalized Additive Model" )
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula=input$formula_lm2,
                    dimredumethod=3, predmodel=2, nbpoints=50,
@@ -3707,7 +3703,7 @@ shinyServer(function(input,output,session)
                                  pred.na=TRUE,dmap.loess=FALSE)}
 
       else if(input$Dimension_var3=="Canonical Analysis" && input$Prediction_var3=="Others" && input$par_var3=="NO" &&
-              input$mod2=="GLmulti" )
+              input$mod2=="Generalized Linear Model" )
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula=input$formula_lm2,
                    dimredumethod=3, predmodel=3, nbpoints=50,
@@ -3718,7 +3714,7 @@ shinyServer(function(input,output,session)
                                  predmodel=3, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=FALSE,dmap.loess=FALSE)}
       else if(input$Dimension_var3=="Canonical Analysis" && input$Prediction_var3=="Others" && input$par_var3=="YES" &&
-              input$mod2=="GLmulti" )
+              input$mod2=="Generalized Linear Model" )
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula=input$formula_lm2,
                    dimredumethod=3, predmodel=3, nbpoints=50,
@@ -3730,7 +3726,7 @@ shinyServer(function(input,output,session)
                                  pred.na=TRUE,dmap.loess=FALSE)}
 
       else if(input$Dimension_var3=="Canonical Analysis" && input$Prediction_var3=="Others" && input$par_var3=="NO" &&
-              input$mod2=="Bayes" )
+              input$mod2=="Bayesian model" )
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula=input$formula_lm2,
                    dimredumethod=3, predmodel=4, nbpoints=50,
@@ -3741,7 +3737,7 @@ shinyServer(function(input,output,session)
                                  predmodel=4, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=FALSE,dmap.loess=FALSE)}
       else if(input$Dimension_var3=="Canonical Analysis" && input$Prediction_var3=="Others" && input$par_var3=="YES" &&
-              input$mod2=="Bayes" )
+              input$mod2=="Bayesian model" )
       {par(mfrow = c(1, 2))
         a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula=input$formula_lm2,
                    dimredumethod=3, predmodel=4, nbpoints=50,
@@ -3757,7 +3753,7 @@ shinyServer(function(input,output,session)
 
 
 
-
+   ##### comparison of maps stability
 
     output$reduction<-renderUI({
       selectInput("reduction","Choose dimension reduction method:",choices = c("Principal Component Analysis",
@@ -3766,18 +3762,18 @@ shinyServer(function(input,output,session)
 
 
     output$Prediction_com<-renderUI({
-      selectInput("Prediction_com","Choose prediction model:",choices = c("Vector model", "Circular model","Elliptical model",
-                                                                           "Quadratic model", "GAM" , "GLmulti", "Bayes"))
+      selectInput("Prediction_com","Choose prediction model:",choices = c("Vector model", "Circular model","Elliptic model",
+                                                                           "Quadratic model", "Generalized Additive Model" , "Generalized Linear Model", "Bayesian model"))
     })
 
     output$formula_lm=renderUI({
-      textInput("formula_lm","Input LM formula :")
+      textInput("formula_lm","Input formula for Polynomial, GLM and Bayesian models :")
 
     })
 
 
     output$formula_gam=renderUI({
-      textInput("formula_gam","Input GAM formula :")
+      textInput("formula_gam","Input formula for GAM :")
 
     })
 
@@ -3792,8 +3788,8 @@ shinyServer(function(input,output,session)
       X=moy2()
       S=moy4()
       # nbpoints=50
-      if(input$reduction=="Principal Component Analysis" && (input$Prediction_com=="Vector model" ||input$Prediction_com=="Circular model"||input$Prediction_com=="Elliptical model"
-                                                             ||input$Prediction_com=="Quadratic model"||input$Prediction_com=="GAM"||input$Prediction_com=="GLmulti"||input$Prediction_com=="Bayes")){
+      if(input$reduction=="Principal Component Analysis" && (input$Prediction_com=="Vector model" ||input$Prediction_com=="Circular model"||input$Prediction_com=="Elliptic model"
+                                                             ||input$Prediction_com=="Quadratic model"||input$Prediction_com=="Generalized Additive Model"||input$Prediction_com=="Generalized Linear Model"||input$Prediction_com=="Bayesian model")){
         res= Dist_prob(Y,X,S,n=input$numm,axis=c(1,2),formula_lm=input$formula_lm,
                        formula_gam=input$formula_gam,dimredumethod=1,
                        nbpoints=50)
@@ -3808,8 +3804,8 @@ shinyServer(function(input,output,session)
         gr
       }
 
-      else if(input$reduction=="Multiple Factor Analysis" && (input$Prediction_com=="Vector model" ||input$Prediction_com=="Circular model"||input$Prediction_com=="Elliptical model"
-                                                             ||input$Prediction_com=="Quadratic model"||input$Prediction_com=="GAM"||input$Prediction_com=="GLmulti"||input$Prediction_com=="Bayes")){
+      else if(input$reduction=="Multiple Factor Analysis" && (input$Prediction_com=="Vector model" ||input$Prediction_com=="Circular model"||input$Prediction_com=="Elliptic model"
+                                                             ||input$Prediction_com=="Quadratic model"||input$Prediction_com=="Generalized Additive Model"||input$Prediction_com=="Generalized Linear Model"||input$Prediction_com=="Bayesian model")){
         res= Dist_prob(Y,X,S,n=input$numm,axis=c(1,2),formula_lm=input$formula_lm,
                        formula_gam=input$formula_gam,dimredumethod=2,
                        nbpoints=50)
@@ -3824,8 +3820,8 @@ shinyServer(function(input,output,session)
         gr
       }
 
-      else if(input$reduction=="Canonical Analysis" && (input$Prediction_com=="Vector model" ||input$Prediction_com=="Circular model"||input$Prediction_com=="Elliptical model"
-                                                              ||input$Prediction_com=="Quadratic model"||input$Prediction_com=="GAM"||input$Prediction_com=="GLmulti"||input$Prediction_com=="Bayes")){
+      else if(input$reduction=="Canonical Analysis" && (input$Prediction_com=="Vector model" ||input$Prediction_com=="Circular model"||input$Prediction_com=="Elliptic model"
+                                                              ||input$Prediction_com=="Quadratic model"||input$Prediction_com=="Generalized Additive Model"||input$Prediction_com=="Generalized Linear Model"||input$Prediction_com=="Bayesian model")){
         res= Dist_prob(Y,X,S,n=input$numm,axis=c(1,2),formula_lm=input$formula_lm,
                        formula_gam=input$formula_gam,dimredumethod=3,
                        nbpoints=50)
@@ -3856,23 +3852,23 @@ shinyServer(function(input,output,session)
         print(cart16())
         dev.off(which=dev.cur())}
     )
+    
+    
     output$dend<-renderPlot({
       df=consInputData()
       res.pca=PCA(t(df),graph = F)
-      a=HCPC(res.pca,graph = F)
-      plot.HCPC(a,choice="tree",new.plot=F)
-      # plot.HCPC(a,choice="tree",new.plot=F)
+      res.hcpc=HCPC(res.pca,graph = F)
+      plot.HCPC(res.hcpc,choice="tree",new.plot=F)
     })
+    
     clus1=reactive({
       df=consInputData()
       res.pca=PCA(t(df),graph = F)
-      a=HCPC(res.pca,graph = F)
-      fviz_cluster(a) +
-                   theme_minimal()+
-                    ggtitle("Clustering Plot")
-
+      res.hcpc=HCPC(res.pca,graph = F)
+      fviz_cluster(res.hcpc) + theme_minimal()+ ggtitle("Clustering Plot")
     })
-    output$clus<-renderPlot({
+   
+     output$clus<-renderPlot({
      clus1()
     })
 
@@ -3893,25 +3889,23 @@ shinyServer(function(input,output,session)
         dev.off(which=dev.cur())}
     )
 
+    
     dend11<-reactive({
       df=consInputData()
       res.pca=PCA(t(df),graph = F)
-      a=HCPC(res.pca,graph = F)
-      b=a$call$t$tree
+      res.hcpc=HCPC(res.pca,graph = F)
+      b=res.hcpc$call$t$tree
       c=as.dendrogram(b)
-      nb=a$call$t$nb.clust
+      nb=res.hcpc$call$t$nb.clust
         d=c %>%
       set("branches_k_color", k = nb) %>% set("branches_lwd", 0.7) %>%
         set("labels_cex", 0.6) %>% set("labels_colors", k = nb) %>%
         set("leaves_pch", 10) %>% set("leaves_cex", 0.5)%>%raise.dendrogram(0.015)%>%remove_nodes_nodePar
       ggd1 <- as.ggdend(d)
      ggplot(ggd1,labels=F)+ggtitle("Dendrogram")+scale_y_continuous(0,1.2)
-
-
-
-
-      # plot.HCPC(a,choice="tree",new.plot=F)
+    plot.HCPC(res.hcpc,choice="tree",new.plot=F)
     })
+    
     output$dend1<-renderPlot({
       dend11()
     })
@@ -3934,8 +3928,8 @@ shinyServer(function(input,output,session)
     output$dend12<-renderPrint({
       df=consInputData()
       res.pca=PCA(t(df),graph = F)
-      a=HCPC(res.pca,graph = F)
-      a$desc.var
+      res.hcpc=HCPC(res.pca,graph = F)
+      res.hcpc$desc.var
           })
 
 
