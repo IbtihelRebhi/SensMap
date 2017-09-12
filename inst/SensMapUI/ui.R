@@ -6,6 +6,36 @@ require(pastecs);
 library(plotly)
 library(shinyBS)
 library(shinyjs)
+library(FactoMineR)
+library(factoextra)
+library(MASS)
+library(fields)
+library(plotly)
+library(mgcv)
+library(MCMCpack)
+library(plyr)
+library(lattice)
+library(ggplot2)
+library(reshape2)
+library(glmulti)
+library(shiny)
+library(googleVis)
+library(multcomp)
+library(sjPlot)
+library(scales)
+library(doBy)
+library(gridExtra)
+library(agricolae)
+library(devtools)
+library(magrittr)
+library(ggbiplot)
+library(ggdendro)
+library(dendextend)
+library(grid)
+#devtools::install_github("vqv/ggbiplot")
+#install.packages("ggdendro")
+#install.packages("pastecs")
+library(pastecs)
 
 shinyUI(bootstrapPage(
   dashboardPage(
@@ -310,7 +340,7 @@ shinyUI(bootstrapPage(
                                         overflow-y: scroll;', verbatimTextOutput("dend12")))
                             ),
                          box(title = tags$b("Clusters"), status = "primary",solidHeader = TRUE,collapsible = TRUE,width=6,height = 550,
-                             plotOutput("clus"),downloadButton("downloadclus", "Download plot",class = "butt"),
+                             plotOutput("clus"), downloadButton("downloadclus", "Download plot",class = "butt"),
                              tags$head(tags$style(".butt{background-color:#add8e6;} .butt{color: #337ab7;}")))
                          )
 
@@ -377,7 +407,6 @@ shinyUI(bootstrapPage(
 
               )))
                   ),
-
 
       tabItem(tabName = "resmod",
               box(title = tags$b("Parameters"), status = "primary",solidHeader = TRUE,collapsible = TRUE,width=4,
