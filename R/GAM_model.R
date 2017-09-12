@@ -1,7 +1,7 @@
 # prediction with gam
 
 predict.scores.gam=function(Y,discretspace,map
-                            ,formula="~s(F1,2)+s(F2,2)+s(F1*F2,2)"
+                            ,formula="~s(F1,k=2)+s(F2,k=2)"
                             ,pred.na=FALSE){
   ## map is a data.frame with F1 and F2 obtained after DR on the explained data Y
   notespr= nbconsos=matrix(0,nrow(discretspace),ncol(discretspace))
