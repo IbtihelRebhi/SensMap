@@ -5,7 +5,7 @@
 Consumer data
 }
 \description{
-hedo_biscuit data was collected from ratings of 294 consumers for these products.
+hedo_biscuit data was collected from ratings of 294 consumers towards 8 cookies (products).
 }
 \usage{
 hedo_biscuit
