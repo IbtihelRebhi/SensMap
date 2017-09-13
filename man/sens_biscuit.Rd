@@ -6,7 +6,7 @@ Sensory data
 }
 \description{
 A sensory evaluation was organized in Pakistan to characterize
-8 cookies products with a set of 23 quantitative sensory
+the 8 cookies products with a set of 23 quantitative sensory
 attributes by 12 trained panelists at 2 tasting sessions.
 }
 \usage{
