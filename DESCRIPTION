@@ -1,15 +1,42 @@
 Package: SensMap
 Type: Package
 Title: Sensory and Consumer Data Mapping
-Version: 0.1
-Date: 2017-09-12
+Version: 0.3
+Date: 2017-09-13
 Author: Ibtihel Rebhi [aut, cre], Rihab Boubakri [ctb], Dhafer Malouche [ctb]
 Maintainer: Ibtihel Rebhi <ibtihel.rebhi@enit.utm.tn>
-Depends:  R (>= 3.0.0), stats, ggbiplot
-Imports: doBy, lattice, grDevices, graphics, FactoMineR, MCMCpack, factoextra, fields, ggdendro, glmulti, mgcv, plotly, shiny, gam
-Description: Functions that facilitate sensory and consumer data mapping. The package provides basic analysis such as characterization of products, panelists and sessions, descriptive and multivariate analysis and performing Internal Preference Mapping. It gives the opportunity to construct also External Preference Mapping with new features such as options on dimension reduction methods and options on prediction methods from linear and non linear regression models. It allows comparison of the performance of models using several selection criteria and using a new measure that was introduced to count the number of predictions outside the liking scores space. This package helps drawing a smoothed version of the map using local regressions to make smooth the curves of levels in the heat map. It helps the comparison of maps stability using an algorithm that computes distances between submaps obtained randomly from chosen subsamples from hedonic data. The package includes a shiny application which provides an easy to use GUI for the different functionalities.
+URL: https://github.com/IbtihelRebhi/SensMap
+Description: External preference mapping technique is commonly used in sensory analysis
+    field to explain consumer preferences in function of sensory attributes of products
+    Danzart(1998) (<doi:10.1006/fstl.1998.0373>). The package provides map visualization
+    with options in dimension reduction methods and prediction models from linear and
+    non linear regressions. A smoothed version of the map performed using LOESS algorithm
+    is available. A comparison approach of maps stability from different features before
+    and after smoothing is provided. A 'shiny' application is included. It presents an
+    easy GUI for the implemented functions as well as a comparative tool of fit models
+    using several criteria. Basic analysis such as characterization of products,
+    panelists and sessions likewise consumer segmentation are available.
+Depends:
+    R (>= 3.0.0),
+    stats,
+    grDevices,
+    graphics
+Imports:
+    ggfortify,
+    doBy,
+    lattice,
+    FactoMineR,
+    MCMCpack,
+    factoextra,
+    fields,
+    ggdendro,
+    glmulti,
+    mgcv,
+    plotly,
+    shiny,
+    ggplot2
 License: GPL (>= 2)
 LazyData: TRUE
+Suggests:
+    testthat
 RoxygenNote: 5.0.1
-
-
