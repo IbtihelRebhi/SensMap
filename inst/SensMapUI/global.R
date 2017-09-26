@@ -1,4 +1,4 @@
-library(mgcv)
+
 
 nbpoints=50
 # map PCA
@@ -30,15 +30,11 @@ map.with.ca=function(X,S,Y){
   des1=S[,3]
   juge=S[,2]
   produit=S[,1]
-  D=model.matrix(des1~produit,data=S)[,-1] # disjonctive matric
-  #des 1 quand prod est noté sinon 0
+  D=model.matrix(des1~produit,data=S)[,-1] # disjonctive matrix
   cc=cancor(E,D)
 
-  # calculer les facteurs canoniques norm´es de l’espace
-  #des notes des juges nj = X*xcoefj/II xcoefj II
-
   norm.xcoef=cc$xcoef%*%diag(rep(1,ncol(cc$xcoef))/sqrt(apply(cc$xcoef^2,2,sum)))
-  eta=data.frame(as.matrix(E)%*%norm.xcoef) # attention centrage <=> chgt Intercept
+  eta=data.frame(as.matrix(E)%*%norm.xcoef)
   names(eta)=paste('F',1:ncol(eta),sep='')
 
   mean.fact=aggregate(eta,by=list(produit),mean)
@@ -116,8 +112,8 @@ predict.scores.lm=function(Y,discretspace,map,
 
 
 
-# prediction with gam with and without rejection from [0.10] 
-predict.scores.gam=function(Y,discretspace,map,formula="~s(F1,k=2)+s(F2,k=2)"
+# prediction with gam with and without rejection from [0.10]
+predict.scores.gam=function(Y,discretspace,map,formula="~s(F1,k=3)+s(F2,k=3)"
                             ,pred.na=FALSE){
   ## map is a data.frame with F1 and F2 obtained after DR on the explained data Y
   notespr= nbconsos=matrix(0,nrow(discretspace),ncol(discretspace))
@@ -141,11 +137,11 @@ predict.scores.gam=function(Y,discretspace,map,formula="~s(F1,k=2)+s(F2,k=2)"
       x[x>10]=NA
       pred.conso[,j]=x
       x=as.data.frame(x)
-      nb.NA[[j]] <- apply(x,2,function(a) sum(is.na(a)))# nbre de NA pour chaque conso
-      pos.NA[[j]]=which(is.na(x))# le point qui contient NA pour chaque consom
+      nb.NA[[j]] <- apply(x,2,function(a) sum(is.na(a)))
+      pos.NA[[j]]=which(is.na(x))
       occur.NA <- unlist(pos.NA)
       occur.NA=as.vector(occur.NA)
-      occur.NA=as.data.frame(table(occur.NA))# nbre de NA en chaque point du plan pour tous les consos
+      occur.NA=as.data.frame(table(occur.NA))
 
     }
     else {
@@ -230,6 +226,8 @@ predict.scores.glmulti=function(Y,discretspace,map,formula="~I(F1*F1)+I(F2*F2)+F
 }
 
 
+
+
 #### Bayes
 # predict scores with bayes mcmcpack
 
@@ -244,7 +242,7 @@ predict.scores.bayes=function(Y,discretspace,map,formula="~I(F1*F1)+I(F2*F2)+F1*
   pred.conso=preference=matrix(0,nrow(discretspace),ncol(Y))
   nb.NA=vector("list",ncol(Y))
   pos.NA=vector("list",ncol(Y))
-  ## Firts we preform all regressions
+  ## First we preform all regressions
   nbconsos=c()
   for(j in 1:ncol(Y)){
     #print(j)
@@ -266,10 +264,7 @@ predict.scores.bayes=function(Y,discretspace,map,formula="~I(F1*F1)+I(F2*F2)+F1*
     mod.mat=model.matrix(m)
     p=ncol(mod.mat)
     pred1=regs[[j]][,-(p+1)]%*%t(mod.mat)
-    #eps1<-mvrnorm(dim(pred1)[2],mu = rep(0,dim(pred1)[1]),Sigma = diag(regs[[j]][,p+1]))
-    #eps1=t(eps1)
 
-    #pred1a=pred1+eps1
     x=pred1
     if (pred.na==TRUE) {
       x[x<0]=NA
@@ -483,7 +478,7 @@ denoising.loess.global = function ( Y,X,S, axis=c(1,2), discretspace,formula, di
   }
 
   if (drawmap == TRUE)  {
-    image.plot(graph.surfconso,col=terrain.colors(60), main="EPM after Loess smoothing")
+    image.plot(graph.surfconso,col=terrain.colors(60), main="Smoothed External Preference Mapping")
     contour(x=graph.surfconso$x,y=graph.surfconso$y,z=graph.surfconso$z,add=T,levels=seq(from=0,to=100,by=5))
     text(x=map$F1,y=map$F2,labels=rownames(Y),pos=3)
     points(x=map$F1,y=map$F2,pch=20)
@@ -510,11 +505,8 @@ denoising.loess.global = function ( Y,X,S, axis=c(1,2), discretspace,formula, di
 
 
 
-######  Distances before and after LOES Smoothing  when PCA for all
-# prediction models 
-
-
-
+######  Distances computing before and after LOES Smoothing  when PCA for all
+# prediction models
 
   Dist_prob<-function(Y,X,S,n,axis=c(1,2),formula_lm,
                            formula_gam,dimredumethod=1,
@@ -525,7 +517,6 @@ denoising.loess.global = function ( Y,X,S, axis=c(1,2), discretspace,formula, di
     dprob_lm <- dprob_lm_loess <- 0
     dprob_gam <- dprob_gam_loess <- 0
    dprob_glm <- dprob_glm_loess <- 0
-   dprob_bayes <- dprob_bayes_loess <- 0
 
 
     for (i in (1:n)) {
@@ -661,55 +652,16 @@ denoising.loess.global = function ( Y,X,S, axis=c(1,2), discretspace,formula, di
 
       dprob_glm_loess[[i]]=sum((graph.surfconso.l.glm1$z-graph.surfconso.l.glm2$z)^2)/(nbpoints^2)
 
-
-
-      ## Bayes before loess
-
-      reg1bayes<-predict.scores.bayes(Y = hedotrain[[i]],discretspace= discretspace,map=map,formula=formula_lm)
-      reg2bayes<-predict.scores.bayes(Y = hedotest[[i]],discretspace= discretspace,map=map,formula=formula_lm)
-      z.bayes1=rowMeans(reg1bayes$pred.conso)
-      z.bayes2=rowMeans(reg2bayes$pred.conso)
-      p.bayes1=100*rowMeans(reg1bayes$preference)
-      p.bayes2=100*rowMeans(reg2bayes$preference)
-      graph.surfconso.b1=as.image(Z=p.bayes1,x=discretspace,nrow=nbpoints,ncol=nbpoints) # Surface d'un seul conso
-      graph.surfconso.b2=as.image(Z=p.bayes2,x=discretspace,nrow=nbpoints,ncol=nbpoints) # Surface d'un seul conso
-      graph.predconso.b1=as.image(Z=z.bayes1,x=discretspace,nrow=nbpoints,ncol=nbpoints) # Surface d'un seul conso
-      graph.predconso.b2=as.image(Z=z.bayes2,x=discretspace,nrow=nbpoints,ncol=nbpoints) # Surface d'un seul conso
-
-      dprob_bayes[[i]]=sum((graph.surfconso.b1$z-graph.surfconso.b2$z)^2)/(nbpoints^2)
-
-
-      ## Bayes after loess
-      reg1bayes.loess<-denoising.loess.global(Y = hedotrain[[i]],X,dimredumethod=1,
-                                              predmodel=4,discretspace = discretspace,
-                                              formula=formula_lm)
-      reg2bayes.loess<-denoising.loess.global(Y = hedotest[[i]],X,dimredumethod=1,
-                                              predmodel=4,discretspace = discretspace,
-                                              formula=formula_lm)
-      z1b.loess=reg1bayes.loess$pred.conso
-      p1b.loess=reg1bayes.loess$preference
-      z2b.loess=reg2bayes.loess$pred.conso
-      p2b.loess=reg2bayes.loess$preference
-
-      graph.surfconso.l.b1=as.image(Z=p1b.loess,x=discretspace,nrow=nbpoints,ncol=nbpoints) # Surface d'un seul conso
-      graph.surfconso.l.b2=as.image(Z=p2b.loess,x=discretspace,nrow=nbpoints,ncol=nbpoints) # Surface d'un seul conso
-      graph.predconso.l.b1=as.image(Z=z1b.loess,x=discretspace,nrow=nbpoints,ncol=nbpoints) # Surface d'un seul conso
-      graph.predconso.l.b2=as.image(Z=z2b.loess,x=discretspace,nrow=nbpoints,ncol=nbpoints) # Surface d'un seul conso
-
-      dprob_bayes_loess[[i]]=sum((graph.surfconso.l.b1$z-graph.surfconso.l.b2$z)^2)/(nbpoints^2)
-
     }
 
 
     result <- rbind(dprob_lm,dprob_lm_loess,
                     dprob_gam,dprob_gam_loess,
-                    dprob_glm,dprob_glm_loess,
-                    dprob_bayes,dprob_bayes_loess)
+                    dprob_glm,dprob_glm_loess)
 
     rownames(result) <- c("dprob_lm","dprob_lm_loess",
                           "dprob_gam","dprob_gam_loess",
-                          "dprob_glm","dprob_glm_loess",
-                          "dprob_bayes","dprob_bayes_loess")
+                          "dprob_glm","dprob_glm_loess")
 
 
     return(result)
