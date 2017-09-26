@@ -12,3 +12,4 @@ discrete.function=function(nbpoints=50,map){
 }
 
 
+
