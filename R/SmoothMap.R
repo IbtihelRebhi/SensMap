@@ -1,10 +1,8 @@
-# Smoothed version of EPM
 
-SmoothMap = function (Y,X,S, axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2", 
-                      dimredumethod=1,
+SmoothMap = function (Y,X,S, axis=c(1,2),formula, dimredumethod=1,
                       predmodel=1, pred.na=FALSE,span=.5,degree=2,
                       graphpred=FALSE, drawmap=TRUE, dmap.loess=FALSE,
-                        nbpoints=50){
+                      nbpoints=50){
 
 
   if(dimredumethod==1) #PCA on Y
@@ -33,18 +31,18 @@ SmoothMap = function (Y,X,S, axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
   discretspace=discrete.function(map = map)
 
   if(predmodel==1)  reg<-predict.scores.lm(Y = Y,formula = formula,discretspace = discretspace,map = map)
-  if(predmodel==2)  reg<-predict.scores.gam(Y = Y,formula = formula,discretspace = discretspace,map = map)
-  if(predmodel==3)  reg<-predict.scores.glmulti(Y = Y,formula = formula,discretspace = discretspace,map = map)
-  if(predmodel==4)  reg<-predict.scores.bayes(Y = Y,formula = formula,discretspace = discretspace,map = map)
+  if(predmodel==2)  reg<-predict.scores.gam(Y = Y,formula_gam = formula,discretspace = discretspace,map = map)
+  if(predmodel==3)  reg<-predict.scores.glmulti(Y = Y,formula_glm = formula,discretspace = discretspace,map = map)
+  if(predmodel==4)  reg<-predict.scores.bayes(Y = Y,formula_bayes = formula,discretspace = discretspace,map = map)
   z.lm=rowMeans(reg$pred.conso)
   p.lm=100*rowMeans(reg$preference)
 
   if(pred.na==TRUE)
   {
     if(predmodel==1)  reg<-predict.scores.lm(Y = Y,pred.na=TRUE,formula = formula,discretspace = discretspace,map = map)
-    if(predmodel==2)  reg<-predict.scores.gam(Y = Y,pred.na=TRUE,formula = formula,discretspace = discretspace,map = map)
-    if(predmodel==3)  reg<-predict.scores.glmulti(Y = Y,pred.na=TRUE,formula = formula,discretspace = discretspace,map = map)
-    if(predmodel==4)  reg<-predict.scores.bayes(Y = Y,formula = formula,discretspace = discretspace,map = map)
+    if(predmodel==2)  reg<-predict.scores.gam(Y = Y,pred.na=TRUE,formula_gam = formula,discretspace = discretspace,map = map)
+    if(predmodel==3)  reg<-predict.scores.glmulti(Y = Y,pred.na=TRUE,formula_glm = formula,discretspace = discretspace,map = map)
+    if(predmodel==4)  reg<-predict.scores.bayes(Y = Y,formula_bayes = formula,discretspace = discretspace,map = map)
     z=rowMeans(reg$pred.conso, na.rm = TRUE)
     p=100*rowMeans(reg$preference, na.rm = TRUE)
   }
@@ -66,14 +64,14 @@ SmoothMap = function (Y,X,S, axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
   if (graphpred == TRUE)
   {
 
-    image.plot(graph.predconso, main="Prediction surface of map smoothed version")
+    image.plot(graph.predconso, main="Prediction surface of smoothed map ")
     contour(x=graph.predconso$x,y=graph.predconso$y,z=graph.predconso$z,add=TRUE,levels=seq(from=0,to=10,by=0.25))
     text(x=map$F1,y=map$F2,labels=rownames(X),pos=3)
     points(x=map$F1,y=map$F2,pch=20)
   }
 
   if (drawmap == TRUE)  {
-    image.plot(graph.surfconso,col=terrain.colors(60), main="Smoothed version of map ")
+    image.plot(graph.surfconso,col=terrain.colors(60), main="Smoothed External Preference Mapping")
     contour(x=graph.surfconso$x,y=graph.surfconso$y,z=graph.surfconso$z,add=T,levels=seq(from=0,to=100,by=5))
     text(x=map$F1,y=map$F2,labels=rownames(Y),pos=3)
     points(x=map$F1,y=map$F2,pch=20)
@@ -97,6 +95,10 @@ SmoothMap = function (Y,X,S, axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
               preference=preference,graphpred=graphpred, drawmap=drawmap,
               dmap.loess=dmap.loess))
 }
+
+
+
+
 
 
 
