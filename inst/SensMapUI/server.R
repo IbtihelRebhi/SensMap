@@ -5,11 +5,11 @@ library(fields)
 library(plotly)
 library(mgcv)
 library(MCMCpack)
+library(glmulti)
 library(plyr)
 library(lattice)
 library(ggplot2)
 library(reshape2)
-library(glmulti)
 library(shiny)
 library(googleVis)
 library(multcomp)
@@ -34,7 +34,7 @@ source('global.R',local = TRUE)
 
 shinyServer(function(input,output,session)
 {
- #### download data 
+ #### download data
   rawInputData0<- reactive({
     rawData = input$rawInputFile
     headerTag = input$headerUI;
@@ -220,7 +220,7 @@ shinyServer(function(input,output,session)
     }
   )
 
-  
+
   cercle <- reactive({
     base=moy2()
     res <-PCA(base,ncp=2)
@@ -237,12 +237,9 @@ shinyServer(function(input,output,session)
     filename = function() {
       paste("cercle", downloadPlotType(), sep=".")
     },
-    # The argument content below takes filename as a function
-    # and returns what's printed to it.
+
     content = function(con) {
-      # Gets the name of the function to use from the
-      # downloadFileType reactive element. Example:
-      # returns function pdf() if downloadFileType == "pdf".
+
       plotFunction <- match.fun(downloadPlotType())
       plotFunction(con, width = downloadPlotWidth(), height = downloadPlotHeight())
       print(cercle())
@@ -265,12 +262,9 @@ shinyServer(function(input,output,session)
     filename = function() {
       paste("scree", downloadPlotType(), sep=".")
     },
-    # The argument content below takes filename as a function
-    # and returns what's printed to it.
+
     content = function(con) {
-      # Gets the name of the function to use from the
-      # downloadFileType reactive element. Example:
-      # returns function pdf() if downloadFileType == "pdf".
+
       plotFunction <- match.fun(downloadPlotType())
       plotFunction(con, width = downloadPlotWidth(), height = downloadPlotHeight())
       print(scree())
@@ -308,12 +302,9 @@ shinyServer(function(input,output,session)
     filename = function() {
       paste("ind", downloadPlotType(), sep=".")
     },
-    # The argument content below takes filename as a function
-    # and returns what's printed to it.
+
     content = function(con) {
-      # Gets the name of the function to use from the
-      # downloadFileType reactive element. Example:
-      # returns function pdf() if downloadFileType == "pdf".
+
       plotFunction <- match.fun(downloadPlotType())
       plotFunction(con, width = downloadPlotWidth(), height = downloadPlotHeight())
       print(ind())
@@ -332,7 +323,7 @@ shinyServer(function(input,output,session)
                    legend.position = 'top')
     print(g)
     biplot=fviz_pca_biplot(res.pca,col.ind = "blue", col.var = "black", title="") + theme_bw()+ggtitle( "Biplot of variables and individuals on first PCA factor map")
-    biplot + theme(plot.title = element_text(size=22, hjust = 0.5,face="bold"))
+    biplot + theme(plot.title = element_text(size=16, hjust = 0.5,face="bold"))
   })
 
 
@@ -344,12 +335,9 @@ shinyServer(function(input,output,session)
     filename = function() {
       paste("bi", downloadPlotType(), sep=".")
     },
-    # The argument content below takes filename as a function
-    # and returns what's printed to it.
+
     content = function(con) {
-      # Gets the name of the function to use from the
-      # downloadFileType reactive element. Example:
-      # returns function pdf() if downloadFileType == "pdf".
+
       plotFunction <- match.fun(downloadPlotType())
       plotFunction(con, width = downloadPlotWidth(), height = downloadPlotHeight())
       print(bi())
@@ -376,12 +364,9 @@ shinyServer(function(input,output,session)
     filename = function() {
       paste("cerclec", downloadPlotType(), sep=".")
     },
-    # The argument content below takes filename as a function
-    # and returns what's printed to it.
+
     content = function(con) {
-      # Gets the name of the function to use from the
-      # downloadFileType reactive element. Example:
-      # returns function pdf() if downloadFileType == "pdf".
+
       plotFunction <- match.fun(downloadPlotType())
       plotFunction(con, width = downloadPlotWidth(), height = downloadPlotHeight())
       print(cerclec())
@@ -413,12 +398,9 @@ shinyServer(function(input,output,session)
     filename = function() {
       paste("screec", downloadPlotType(), sep=".")
     },
-    # The argument content below takes filename as a function
-    # and returns what's printed to it.
+
     content = function(con) {
-      # Gets the name of the function to use from the
-      # downloadFileType reactive element. Example:
-      # returns function pdf() if downloadFileType == "pdf".
+
       plotFunction <- match.fun(downloadPlotType())
       plotFunction(con, width = downloadPlotWidth(), height = downloadPlotHeight())
       print(screec())
@@ -454,12 +436,9 @@ shinyServer(function(input,output,session)
     filename = function() {
       paste("indc", downloadPlotType(), sep=".")
     },
-    # The argument content below takes filename as a function
-    # and returns what's printed to it.
+
     content = function(con) {
-      # Gets the name of the function to use from the
-      # downloadFileType reactive element. Example:
-      # returns function pdf() if downloadFileType == "pdf".
+
       plotFunction <- match.fun(downloadPlotType())
       plotFunction(con, width = downloadPlotWidth(), height = downloadPlotHeight())
       print(indc())
@@ -478,7 +457,7 @@ shinyServer(function(input,output,session)
                    legend.position = 'top')
     print(g)
     biplot=fviz_pca_biplot(res.pca,col.ind = "blue", col.var = "black", title="") + theme_bw()+ggtitle( "Biplot of variables and individuals on first PCA factor map")
-    biplot + theme(plot.title = element_text(size=22, hjust = 0.5,face="bold"))
+    biplot + theme(plot.title = element_text(size=16, hjust = 0.5,face="bold"))
   })
 
   output$bic <- renderPlot({
@@ -489,12 +468,9 @@ shinyServer(function(input,output,session)
     filename = function() {
       paste("bic", downloadPlotType(), sep=".")
     },
-    # The argument content below takes filename as a function
-    # and returns what's printed to it.
+
     content = function(con) {
-      # Gets the name of the function to use from the
-      # downloadFileType reactive element. Example:
-      # returns function pdf() if downloadFileType == "pdf".
+
       plotFunction <- match.fun(downloadPlotType())
       plotFunction(con, width = downloadPlotWidth(), height = downloadPlotHeight())
       print(bic())
@@ -924,12 +900,9 @@ shinyServer(function(input,output,session)
     filename = function() {
       paste("tukeyPlot", downloadPlotType(), sep=".")
     },
-    # The argument content below takes filename as a function
-    # and returns what's printed to it.
+
     content = function(con) {
-      # Gets the name of the function to use from the
-      # downloadFileType reactive element. Example:
-      # returns function pdf() if downloadFileType == "pdf".
+
       plotFunction <- match.fun(downloadPlotType())
       plotFunction(con, width = downloadPlotWidth(), height = downloadPlotHeight())
       print(tukeyplot1())
@@ -999,45 +972,7 @@ shinyServer(function(input,output,session)
 
 
 
-  #####makers
-  #output$vmakers <- renderUI({
-   # df=rawInputData()
 
-  # if (is.null(df)) return(NULL)
-  # items=names(df)
-  #  names(items)=items
-  #  selectInput("vmakers","Select descriptor variable from:",items)
-  #})
-
-  #output$fmakers <- renderUI({
-  # df<- rawInputData()
-
-  # if (is.null(df)) return(NULL)
-
-
-    #Let's only show factor columns
-  # nums <- sapply(df, is.factor)
-  # items=names(nums[nums])
-  # names(items)=items
-  #  selectInput("fmakers", "Select a factor :",items)
-  # })
-
-  # plotCareac <- reactive({
-  #  df=rawInputData()
-  #  attach(df)
-  #  h <- list(
-  #    title = ""
-  #  )
-  #  l <- list(
-  #    title = "")
-  # plot_ly(df,x= df[[input$vmakers]],color=df[[input$fmakers]],colors = "Set1",mode="markers")%>%
-  #    layout(xaxis = h, yaxis = l)
-
-  #})
-  #output$plotC<-renderPlotly ({
-  #  plotCareac()
-
-  # })
 
   ##Lines
   output$vlines <- renderUI({
@@ -1186,12 +1121,9 @@ shinyServer(function(input,output,session)
     filename = function() {
       paste(downloadPlotFileName(), downloadPlotType(), sep=".")
     },
-    # The argument content below takes filename as a function
-    # and returns what's printed to it.
+
     content = function(con) {
-      # Gets the name of the function to use from the
-      # downloadFileType reactive element. Example:
-      # returns function pdf() if downloadFileType == "pdf".
+
       plotFunction <- match.fun(downloadPlotType())
       plotFunction(con, width = downloadPlotWidth(), height = downloadPlotHeight())
         print(plotAreac())
@@ -1230,12 +1162,9 @@ shinyServer(function(input,output,session)
     filename = function() {
       paste("plot", downloadPlotType(), sep=".")
     },
-    # The argument content below takes filename as a function
-    # and returns what's printed to it.
+
     content = function(con) {
-      # Gets the name of the function to use from the
-      # downloadFileType reactive element. Example:
-      # returns function pdf() if downloadFileType == "pdf".
+
       plotFunction <- match.fun(downloadPlotType())
       plotFunction(con, width = 15, height = downloadPlotHeight())
       plot(cart())
@@ -1326,7 +1255,7 @@ shinyServer(function(input,output,session)
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
     else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="YES")
-   {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
+   {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=3)+s(F2,k=3)",
               dimredumethod=1, predmodel=2, nbpoints=50,
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
@@ -1358,7 +1287,7 @@ shinyServer(function(input,output,session)
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
     else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="NO")
-    {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
+    {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=3)+s(F2,k=3)",
               dimredumethod=1, predmodel=2, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
@@ -1396,7 +1325,7 @@ shinyServer(function(input,output,session)
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
     else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="YES")
-    {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
+    {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=3)+s(F2,k=3)",
               dimredumethod=2, predmodel=2, nbpoints=50,
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
@@ -1430,7 +1359,7 @@ shinyServer(function(input,output,session)
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
     else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="NO")
-    {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
+    {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=3)+s(F2,k=3)",
               dimredumethod=2, predmodel=2, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
@@ -1467,7 +1396,7 @@ shinyServer(function(input,output,session)
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
     else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="YES")
-    {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
+    {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=3)+s(F2,k=3)",
               dimredumethod=3, predmodel=2, nbpoints=50,
               pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
@@ -1499,7 +1428,7 @@ shinyServer(function(input,output,session)
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
     else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="NO")
-    {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
+    {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=3)+s(F2,k=3)",
               dimredumethod=3, predmodel=2, nbpoints=50,
               pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
               graph.map.3D =FALSE )}
@@ -1694,7 +1623,7 @@ shinyServer(function(input,output,session)
                 pred.na =TRUE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
       else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="YES")
-      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
+      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=3)+s(F2,k=3)",
                 dimredumethod=1, predmodel=2, nbpoints=50,
                 pred.na =TRUE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
@@ -1726,7 +1655,7 @@ shinyServer(function(input,output,session)
                 pred.na =FALSE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
       else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="NO")
-      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
+      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=3)+s(F2,k=3)",
                 dimredumethod=1, predmodel=2, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
@@ -1764,7 +1693,7 @@ shinyServer(function(input,output,session)
                 pred.na =TRUE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
       else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="YES")
-      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
+      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=3)+s(F2,k=3)",
                 dimredumethod=2, predmodel=2, nbpoints=50,
                 pred.na =TRUE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
@@ -1798,7 +1727,7 @@ shinyServer(function(input,output,session)
                 pred.na =FALSE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
       else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="NO")
-      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
+      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=3)+s(F2,k=3)",
                 dimredumethod=2, predmodel=2, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
@@ -1835,7 +1764,7 @@ shinyServer(function(input,output,session)
                 pred.na =TRUE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
       else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="YES")
-      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
+      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=3)+s(F2,k=3)",
                 dimredumethod=3, predmodel=2, nbpoints=50,
                 pred.na =TRUE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
@@ -1867,7 +1796,7 @@ shinyServer(function(input,output,session)
                 pred.na =FALSE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
       else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="NO")
-      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
+      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=3)+s(F2,k=3)",
                 dimredumethod=3, predmodel=2, nbpoints=50,
                 pred.na =FALSE, graph.pred =T, graph.map =F,
                 graph.map.3D =FALSE )}
@@ -2064,7 +1993,7 @@ shinyServer(function(input,output,session)
                 pred.na =TRUE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
       else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="YES")
-      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
+      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=3)+s(F2,k=3)",
                 dimredumethod=1, predmodel=2, nbpoints=50,
                 pred.na =TRUE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
@@ -2096,7 +2025,7 @@ shinyServer(function(input,output,session)
                 pred.na =FALSE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
       else if(input$Dimension_var=="Principal Component Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="NO")
-      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
+      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=3)+s(F2,k=3)",
                 dimredumethod=1, predmodel=2, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
@@ -2134,7 +2063,7 @@ shinyServer(function(input,output,session)
                 pred.na =TRUE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
       else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="YES")
-      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
+      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=3)+s(F2,k=3)",
                 dimredumethod=2, predmodel=2, nbpoints=50,
                 pred.na =TRUE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
@@ -2168,7 +2097,7 @@ shinyServer(function(input,output,session)
                 pred.na =FALSE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
       else if(input$Dimension_var=="Multiple Factor Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="NO")
-      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
+      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=3)+s(F2,k=3)",
                 dimredumethod=2, predmodel=2, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
@@ -2205,7 +2134,7 @@ shinyServer(function(input,output,session)
                 pred.na =TRUE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
       else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="YES")
-      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
+      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=3)+s(F2,k=3)",
                 dimredumethod=3, predmodel=2, nbpoints=50,
                 pred.na =TRUE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
@@ -2237,7 +2166,7 @@ shinyServer(function(input,output,session)
                 pred.na =FALSE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
       else if(input$Dimension_var=="Canonical Analysis" && input$Prediction_var=="Generalized Additive Model" && input$par_var=="NO")
-      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
+      {drawmap (Y[,input$interval2[1]:input$interval2[2]],X,S,axis=c(1,2),formula="~s(F1,k=3)+s(F2,k=3)",
                 dimredumethod=3, predmodel=2, nbpoints=50,
                 pred.na =FALSE, graph.pred =F, graph.map =F,
                 graph.map.3D =T )}
@@ -2452,13 +2381,16 @@ shinyServer(function(input,output,session)
         x1=c(1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y))
         x2=c(aic.lm,aic.vect,aic.circ,aic.ellip,aic.gam,aic.glm)
         x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLM",ncol(Y)))
-        dt=cbind.data.frame(x1,x2,x3)
-        colnames(dt)=c("consumer","AIC","model")
+
         library(ggplot2)
-        gr<-ggplot(dt,aes(x=consumer,y=AIC,col=model))+geom_line()+xlab("Consumers")+ylab("AIC")+
-          ggtitle( "Comparison of AIC of prediction models from PCA")
-        gr+theme_bw()+ theme(plot.title = element_text(size=16, hjust = 0.5,face="bold"))+
-          geom_smooth()
+
+        bas=data.frame(x3,x2)
+        g2<-ggplot(bas,aes(x=x3,y=x2,fill=x3))+geom_boxplot()+xlab("Models")+
+          ylab("AIC")+ggtitle( "Comparison of models with AIC ")
+        g2<-g2+theme_bw()+theme(legend.position = "none",
+                                axis.text.x = element_text(angle = 90),
+                                plot.title = element_text(size=10, hjust = 0.5,face="bold"))
+        g2
 
 
       }
@@ -2487,13 +2419,14 @@ shinyServer(function(input,output,session)
         x1=c(1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y))
         x2=c(aic.lm,aic.vect,aic.circ,aic.ellip,aic.gam,aic.glm)
         x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLM",ncol(Y)))
-        dt=cbind.data.frame(x1,x2,x3)
-        colnames(dt)=c("consumer","AIC","model")
 
-        gr1<-ggplot(dt,aes(x=consumer,y=AIC,col=model))+geom_line()+xlab("Consumers")+ylab("AIC")+
-          ggtitle( "Comparison of AIC of prediction models from MFA ")
-        gr1+theme_bw()+ theme(plot.title = element_text(size=16, hjust = 0.5,face="bold"))+
-          geom_smooth()
+        bas1=data.frame(x3,x2)
+        g21<-ggplot(bas1,aes(x=x3,y=x2,fill=x3))+geom_boxplot()+xlab("Models")+
+          ylab("AIC")+ggtitle( "Comparison of models with AIC ")
+        g21<-g21+theme_bw()+theme(legend.position = "none",
+                                axis.text.x = element_text(angle = 90),
+                                plot.title = element_text(size=10, hjust = 0.5,face="bold"))
+        g21
 
       }
       else if(input$aic=="AIC" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptic model"
@@ -2521,18 +2454,20 @@ shinyServer(function(input,output,session)
         x1=c(1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y))
         x2=c(aic.lm,aic.vect,aic.circ,aic.ellip,aic.gam,aic.glm)
         x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLM",ncol(Y)))
-        dt=cbind.data.frame(x1,x2,x3)
-        colnames(dt)=c("consumer","AIC","model")
 
-        gr2<-ggplot(dt,aes
-                    (x=consumer,y=AIC,col=model))+geom_line()+xlab("Consumers")+ylab("AIC")+
-          ggtitle( "Comparison of AIC of prediction models from CA ")
-        gr2+theme_bw()+ theme(plot.title = element_text(size=16, hjust = 0.5,face="bold"))+
-          geom_smooth()
+
+        bas2=data.frame(x3,x2)
+        g23<-ggplot(bas2,aes(x=x3,y=x2,fill=x3))+geom_boxplot()+xlab("Models")+
+          ylab("AIC")+ggtitle( "Comparison of models with AIC ")
+        g23<-g23+theme_bw()+theme(legend.position = "none",
+                                axis.text.x = element_text(angle = 90),
+                                plot.title = element_text(size=10, hjust = 0.5,face="bold"))
+        g23
+
       }
 
       else if(input$aic=="R2" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptic model"
-                                   ||input$Prediction_var1=="Quadratic model"||input$Prediction_var1=="Generalized Additive Model"||input$Prediction_var1=="GLM") &&
+                                   ||input$Prediction_var1=="Quadratic model"||input$Prediction_var1=="Generalized Additive Model"||input$Prediction_var1=="Generalized Linear Model") &&
               input$Dimension_var1== "Principal Component Analysis"){
         map=map.with.pca(X)
         maps=cbind.data.frame(map$F1,map$F2)
@@ -2556,14 +2491,15 @@ shinyServer(function(input,output,session)
         x1=c(1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y))
         x2=c(r2.lm,r2.vect,r2.circ,r2.ellip,r2.gam,r2.glm)
         x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLM",ncol(Y)))
-        dt=cbind.data.frame(x1,x2,x3)
-        colnames(dt)=c("consumer","Rsquared","model")
-        
-        gr2<-ggplot(dt,aes
-         (x=consumer,y=Rsquared,col=model))+geom_line()+xlab("Consumers")+ylab("Rsquared")+
-          ggtitle( "Comparison of R2 of prediction models from PCA ")
-        gr2+theme_bw()+ theme(plot.title = element_text(size=16, hjust = 0.5,face="bold"))+
-          geom_smooth()
+
+
+        bas3=data.frame(x3,x2)
+        g22<-ggplot(bas3,aes(x=x3,y=x2,fill=x3))+geom_boxplot()+xlab("Models")+
+          ylab("R2")+ggtitle( "Comparison of models with R-squared ")
+        g22<-g22+theme_bw()+theme(legend.position = "none",
+                                axis.text.x = element_text(angle = 90),
+                                plot.title = element_text(size=10, hjust = 0.5,face="bold"))
+        g22
 
       }
       else if(input$aic=="R2" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptic model"
@@ -2592,14 +2528,15 @@ shinyServer(function(input,output,session)
         x1=c(1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y))
         x2=c(r2.lm,r2.vect,r2.circ,r2.ellip,r2.gam,r2.glm)
         x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("Generalized Additive Model",ncol(Y)),rep("Generalized Linear Model",ncol(Y)))
-        dt=cbind.data.frame(x1,x2,x3)
-        colnames(dt)=c("consumer","Rsquared","model")
-        
-        gr2<-ggplot(dt,aes
-                    (x=consumer,y=Rsquared,col=model))+geom_line()+xlab("Consumers")+ylab("Rsquared")+
-          ggtitle( "Comparison of R2 of prediction models from MFA ")
-        gr2+theme_bw()+ theme(plot.title = element_text(size=16, hjust = 0.5,face="bold"))+
-          geom_smooth()
+
+
+        bas4=data.frame(x3,x2)
+        g22<-ggplot(bas4,aes(x=x3,y=x2,fill=x3))+geom_boxplot()+xlab("Models")+
+          ylab("R2")+ggtitle( "Comparison of models with R-squared ")
+        g23<-g23+theme_bw()+theme(legend.position = "none",
+                                  axis.text.x = element_text(angle = 90),
+                                  plot.title = element_text(size=10, hjust = 0.5,face="bold"))
+        g23
       }
       else if(input$aic=="R2" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptic model"
                                    ||input$Prediction_var1=="Quadratic model"||input$Prediction_var1=="Generalized Additive Model"||input$Prediction_var1=="Generalized Linear Model") &&
@@ -2627,14 +2564,14 @@ shinyServer(function(input,output,session)
         x1=c(1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y))
         x2=c(r2.lm,r2.vect,r2.circ,r2.ellip,r2.gam,r2.glm)
         x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLM",ncol(Y)))
-        dt=cbind.data.frame(x1,x2,x3)
-        colnames(dt)=c("consumer","Rsquared","model")
-        
-        gr2<-ggplot(dt,aes
-                    (x=consumer,y=Rsquared,col=model))+geom_line()+xlab("Consumers")+ylab("Rsquared")+
-          ggtitle( "Comparison of R2 of prediction models from CA ")
-        gr2+theme_bw()+ theme(plot.title = element_text(size=16, hjust = 0.5,face="bold"))+
-          geom_smooth()
+
+        bas4=data.frame(x3,x2)
+        g24<-ggplot(bas4,aes(x=x3,y=x2,fill=x3))+geom_boxplot()+xlab("Models")+
+          ylab("R2")+ggtitle( "Comparison of models with R-squared ")
+        g24<-g24+theme_bw()+theme(legend.position = "none",
+                                  axis.text.x = element_text(angle = 90),
+                                  plot.title = element_text(size=10, hjust = 0.5,face="bold"))
+        g24
       }
 
       else if(input$aic=="Fstat" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptic model"
@@ -2666,13 +2603,14 @@ shinyServer(function(input,output,session)
         x2=c(f.lm,f.vect,f.circ,f.ellip,f.gam,f.glm)
         x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLM",ncol(Y)))
         x2=unlist(x2)
-        dt=cbind.data.frame(x1,x2,x3)
-        colnames(dt)=c("consumer","Fstat","model")
-        gr2<-ggplot(dt,aes
-                    (x=consumer,y=Fstat,col=model))+geom_line()+xlab("Consumers")+ylab("Fstatistic")+
-          ggtitle( "Comparison of Fstat of prediction models from PCA ")
-        gr2+theme_bw()+ theme(plot.title = element_text(size=16, hjust = 0.5,face="bold"))+
-          geom_smooth()
+
+        bas5=data.frame(x3,x2)
+        g25<-ggplot(bas5,aes(x=x3,y=x2,fill=x3))+geom_boxplot()+xlab("Models")+
+          ylab("F-statistic")+ ggtitle( "Comparison of models with F-statistic ")
+        g25<-g25+theme_bw()+theme(legend.position = "none",
+                                axis.text.x = element_text(angle = 90),
+                                plot.title = element_text(size=10, hjust = 0.5,face="bold"))
+        g25+ylim(min=0, max=100)
       }
       else if(input$aic=="Fstat" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptic model"
                                     ||input$Prediction_var1=="Quadratic model"||input$Prediction_var1=="Generalized Additive Model"||input$Prediction_var1=="Generalized Linear Model") &&
@@ -2699,18 +2637,19 @@ shinyServer(function(input,output,session)
         f.glm=extract.glm(x.glm,what=c("fstastic"))
         for (i in 1:length(f.glm)){ if (is.null(f.glm[[i]] )) {f.glm[[i]]=0} }
 
-        x1=c(1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y))
+
         x2=c(f.lm,f.vect,f.circ,f.ellip,f.gam,f.glm)
         x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLM",ncol(Y)))
         x2=unlist(x2)
-        dt=cbind.data.frame(x1,x2,x3)
-        colnames(dt)=c("consumer","Fstat","model")
-        
-        gr2<-ggplot(dt,aes
-                    (x=consumer,y=Fstat,col=model))+geom_line()+xlab("Consumers")+ylab("Fstatistic")+
-          ggtitle( "Comparison of Fstat of prediction models from MFA")
-        gr2+theme_bw()+ theme(plot.title = element_text(size=16, hjust = 0.5,face="bold"))+
-          geom_smooth()
+
+
+        bas6=data.frame(x3,x2)
+        g26<-ggplot(bas6,aes(x=x3,y=x2,fill=x3))+geom_boxplot()+xlab("Models")+
+          ylab("F-statistic")+ ggtitle( "Comparison of models with F-statistic ")
+        g26<-g26+theme_bw()+theme(legend.position = "none",
+                                  axis.text.x = element_text(angle = 90),
+                                  plot.title = element_text(size=10, hjust = 0.5,face="bold"))
+        g26+ylim(min=0, max=100)
       }
       else if(input$aic=="Fstat" && (input$Prediction_var1=="Vector model" ||input$Prediction_var1=="Circular model"||input$Prediction_var1=="Elliptic model"
                                     ||input$Prediction_var1=="Quadratic model"||input$Prediction_var1=="Generalized Additive Model"||input$Prediction_var1=="Generalized Linear Model") &&
@@ -2739,18 +2678,20 @@ shinyServer(function(input,output,session)
         f.glm=extract.glm(x.glm,what=c("fstastic"))
         for (i in 1:length(f.glm)){ if (is.null(f.glm[[i]] )) {f.glm[[i]]=0} }
 
-        x1=c(1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y),1:ncol(Y))
+
         x2=c(f.lm,f.vect,f.circ,f.ellip,f.gam,f.glm)
         x3=c(rep("QR",ncol(Y)),rep("Vect",ncol(Y)),rep("Circ",ncol(Y)),rep("Ellip",ncol(Y)),rep("GAM",ncol(Y)),rep("GLM",ncol(Y)))
         x2=unlist(x2)
-        dt=cbind.data.frame(x1,x2,x3)
-        colnames(dt)=c("consumer","Fstat","model")
-        
-        gr2<-ggplot(dt,aes
-                    (x=consumer,y=Fstat,col=model))+geom_line()+xlab("Consumers")+ylab("Fstatistic")+
-          ggtitle( "Comparison of Fstat of prediction models from CA ")
-        gr2+theme_bw()+ theme(plot.title = element_text(size=16, hjust = 0.5,face="bold"))+
-          geom_smooth()
+
+
+
+        bas7=data.frame(x3,x2)
+        g27<-ggplot(bas7,aes(x=x3,y=x2,fill=x3))+geom_boxplot()+xlab("Models")+
+          ylab("F-statistic")+ ggtitle( "Comparison of models with F-statistic ")
+        g27<-g27+theme_bw()+theme(legend.position = "none",
+                                  axis.text.x = element_text(angle = 90),
+                                  plot.title = element_text(size=10, hjust = 0.5,face="bold"))
+        g27+ylim(min=0, max=100)
       }
 
       ###########
@@ -2798,11 +2739,11 @@ shinyServer(function(input,output,session)
         nb.ellip=as.data.frame(nb.ellip)
 
         # gam
-     
+
         x.gam=predict.scores.gam(Y = Y,discretspace = discretspace,
                                  map = maps,
                                  pred.na=TRUE)
-     
+
 
         nb.gam=x.gam$nb.NA
         nb.gam=unlist(nb.gam)
@@ -3105,12 +3046,12 @@ shinyServer(function(input,output,session)
                                  pred.na=TRUE,dmap.loess=FALSE)}
       else if(input$Dimension_var3=="Principal Component Analysis" && input$Prediction_var3=="Generalized Additive Model" && input$par_var3=="YES")
       {par(mfrow = c(1,2))
-        a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
+        a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~s(F1,k=3)+s(F2,k=3)",
                 dimredumethod=1, predmodel=2, nbpoints=50,
                 pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
                 graph.map.3D =FALSE )
         b=denoising.loess.global(X,Y[,input$interval3[1]:input$interval3[2]],S, axis=c(1,2), discretspace=discretspace,
-                                 formula="~s(F1,k=2)+s(F2,k=2)", dimredumethod=1,
+                                 formula="~s(F1,k=3)+s(F2,k=3)", dimredumethod=1,
                                  predmodel=2, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=TRUE,dmap.loess=FALSE)}
       else if(input$Dimension_var3=="Principal Component Analysis" && input$Prediction_var3=="Generalized Linear Model" && input$par_var3=="YES")
@@ -3167,12 +3108,12 @@ shinyServer(function(input,output,session)
                                  pred.na=FALSE,dmap.loess=FALSE)}
       else if(input$Dimension_var3=="Principal Component Analysis" && input$Prediction_var3=="Generalized Additive Model" && input$par_var3=="NO")
       {par(mfrow = c(1, 2))
-        a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
+        a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~s(F1,k=3)+s(F2,k=3)",
                 dimredumethod=1, predmodel=2, nbpoints=50,
                 pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
                 graph.map.3D =FALSE )
         b=denoising.loess.global(X,Y[,input$interval3[1]:input$interval3[2]],S, axis=c(1,2), discretspace=discretspace,
-                                 formula="~s(F1,k=2)+s(F2,k=2)", dimredumethod=1,
+                                 formula="~s(F1,k=3)+s(F2,k=3)", dimredumethod=1,
                                  predmodel=2, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=FALSE,dmap.loess=FALSE)}
       else if(input$Dimension_var3=="Principal Component Analysis" && input$Prediction_var3=="Generalized Linear Model" && input$par_var3=="NO")
@@ -3240,12 +3181,12 @@ shinyServer(function(input,output,session)
                                  pred.na=TRUE,dmap.loess=FALSE)}
       else if(input$Dimension_var3=="Multiple Factor Analysis" && input$Prediction_var3=="Generalized Additive Model" && input$par_var3=="YES")
       {par(mfrow = c(1, 2))
-        a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
+        a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~s(F1,k=3)+s(F2,k=3)",
                 dimredumethod=2, predmodel=2, nbpoints=50,
                 pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
                 graph.map.3D =FALSE )
         b=denoising.loess.global(X,Y[,input$interval3[1]:input$interval3[2]],S, axis=c(1,2), discretspace=discretspace,
-                                 formula="~s(F1,k=2)+s(F2,k=2)", dimredumethod=2,
+                                 formula="~s(F1,k=3)+s(F2,k=3)", dimredumethod=2,
                                  predmodel=2, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=TRUE,dmap.loess=FALSE)}
       else if(input$Dimension_var3=="Multiple Factor Analysis" && input$Prediction_var3=="Generalized Linear Model" && input$par_var3=="YES")
@@ -3303,12 +3244,12 @@ shinyServer(function(input,output,session)
                                  pred.na=FALSE,dmap.loess=FALSE)}
       else if(input$Dimension_var3=="Multiple Factor Analysis" && input$Prediction_var3=="Generalized Additive Model" && input$par_var3=="NO")
       {par(mfrow = c(1, 2))
-        a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
+        a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~s(F1,k=3)+s(F2,k=3)",
                 dimredumethod=2, predmodel=2, nbpoints=50,
                 pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
                 graph.map.3D =FALSE )
         b=denoising.loess.global(X,Y[,input$interval3[1]:input$interval3[2]],S, axis=c(1,2), discretspace=discretspace,
-                                 formula="~s(F1,k=2)+s(F2,k=2)", dimredumethod=2,
+                                 formula="~s(F1,k=3)+s(F2,k=3)", dimredumethod=2,
                                  predmodel=2, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=FALSE,dmap.loess=FALSE)}
       else if(input$Dimension_var3=="Multiple Factor Analysis" && input$Prediction_var3=="Generalized Linear Model" && input$par_var3=="NO")
@@ -3377,12 +3318,12 @@ shinyServer(function(input,output,session)
                                  pred.na=TRUE,dmap.loess=FALSE)}
       else if(input$Dimension_var3=="Canonical Analysis" && input$Prediction_var3=="Generalized Additive Model" && input$par_var3=="YES")
       {par(mfrow = c(1, 2))
-        a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
+        a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~s(F1,k=3)+s(F2,k=3)",
                 dimredumethod=3, predmodel=2, nbpoints=50,
                 pred.na =TRUE, graph.pred =FALSE, graph.map =TRUE,
                 graph.map.3D =FALSE )
         b=denoising.loess.global(X,Y[,input$interval3[1]:input$interval3[2]],S, axis=c(1,2), discretspace=discretspace,
-                                 formula="~s(F1,k=2)+s(F2,k=2)", dimredumethod=3,
+                                 formula="~s(F1,k=3)+s(F2,k=3)", dimredumethod=3,
                                  predmodel=2, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=TRUE,dmap.loess=FALSE)}
       else if(input$Dimension_var3=="Canonical Analysis" && input$Prediction_var3=="Generalized Linear Model" && input$par_var3=="YES")
@@ -3440,12 +3381,12 @@ shinyServer(function(input,output,session)
                                  pred.na=FALSE,dmap.loess=FALSE)}
       else if(input$Dimension_var3=="Canonical Analysis" && input$Prediction_var3=="Generalized Additive Model" && input$par_var3=="NO")
       {par(mfrow = c(1, 2))
-        a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~s(F1,k=2)+s(F2,k=2)",
+        a=drawmap (Y[,input$interval3[1]:input$interval3[2]],X,S,axis=c(1,2),formula="~s(F1,k=3)+s(F2,k=3)",
                 dimredumethod=3, predmodel=2, nbpoints=50,
                 pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
                 graph.map.3D =FALSE )
         b=denoising.loess.global(X,Y[,input$interval3[1]:input$interval3[2]],S, axis=c(1,2), discretspace=discretspace,
-                                 formula="~s(F1,k=2)+s(F2,k=2)", dimredumethod=3,
+                                 formula="~s(F1,k=3)+s(F2,k=3)", dimredumethod=3,
                                  predmodel=2, graphpred=FALSE, drawmap=TRUE,
                                  pred.na=FALSE,dmap.loess=FALSE)}
       else if(input$Dimension_var3=="Canonical Analysis" && input$Prediction_var3=="Generalized Linear Model" && input$par_var3=="NO")
@@ -3763,11 +3704,11 @@ shinyServer(function(input,output,session)
 
     output$Prediction_com<-renderUI({
       selectInput("Prediction_com","Choose prediction model:",choices = c("Vector model", "Circular model","Elliptic model",
-                                                                           "Quadratic model", "Generalized Additive Model" , "Generalized Linear Model", "Bayesian model"))
+                                                                           "Quadratic model", "Generalized Additive Model" , "Generalized Linear Model"))
     })
 
     output$formula_lm=renderUI({
-      textInput("formula_lm","Input formula for Polynomial, GLM and Bayesian models :")
+      textInput("formula_lm","Input formula for Polynomial and GLM models :")
 
     })
 
@@ -3778,8 +3719,8 @@ shinyServer(function(input,output,session)
     })
 
     output$numm<-renderUI({
-      numericInput("numm","Introduce number of sampling n ( at least 2):", 1,
-                   min = 1, max = 100)
+      numericInput("numm","Introduce number of sampling n (at least 2):", 2,
+                   min = 2, max = 100)
     })
 
     output$comparaison=renderPlot({cart16()})
@@ -3852,22 +3793,22 @@ shinyServer(function(input,output,session)
         print(cart16())
         dev.off(which=dev.cur())}
     )
-    
-    
+
+
     output$dend<-renderPlot({
       df=consInputData()
       res.pca=PCA(t(df),graph = F)
       res.hcpc=HCPC(res.pca,graph = F)
       plot.HCPC(res.hcpc,choice="tree",new.plot=F)
     })
-    
+
     clus1=reactive({
       df=consInputData()
       res.pca=PCA(t(df),graph = F)
       res.hcpc=HCPC(res.pca,graph = F)
       fviz_cluster(res.hcpc) + theme_minimal()+ ggtitle("Clustering Plot")
     })
-   
+
      output$clus<-renderPlot({
      clus1()
     })
@@ -3889,7 +3830,7 @@ shinyServer(function(input,output,session)
         dev.off(which=dev.cur())}
     )
 
-    
+
     dend11<-reactive({
       df=consInputData()
       res.pca=PCA(t(df),graph = F)
@@ -3905,7 +3846,7 @@ shinyServer(function(input,output,session)
      ggplot(ggd1,labels=F)+ggtitle("Dendrogram")+scale_y_continuous(0,1.2)
     plot.HCPC(res.hcpc,choice="tree",new.plot=F)
     })
-    
+
     output$dend1<-renderPlot({
       dend11()
     })
@@ -3913,12 +3854,9 @@ shinyServer(function(input,output,session)
       filename = function() {
         paste("Plot", downloadPlotType(), sep=".")
       },
-      # The argument content below takes filename as a function
-      # and returns what's printed to it.
+
       content = function(con) {
-        # Gets the name of the function to use from the
-        # downloadFileType reactive element. Example:
-        # returns function pdf() if downloadFileType == "pdf".
+
         plotFunction <- match.fun(downloadPlotType())
         plotFunction(con, width = downloadPlotWidth(), height = downloadPlotHeight())
         print(dend11())
