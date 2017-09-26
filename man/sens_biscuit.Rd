@@ -6,7 +6,7 @@ Sensory data
 }
 \description{
 A sensory evaluation was organized in Pakistan to characterize
-the 8 cookies products with a set of 23 quantitative sensory
+8 cookies products with a set of 23 quantitative sensory
 attributes by 12 trained panelists at 2 tasting sessions.
 }
 \usage{
@@ -24,9 +24,9 @@ sens_biscuit
      factor : numbering the 8 products
   }
   \item{\code{23 attributes}}{
-    quantitative variables : characteristics of products  
+    quantitative variables : characteristics of products
   }
-  
+
 }}
 \source{
   Francois Husson data sets
