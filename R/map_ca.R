@@ -5,22 +5,17 @@ map.with.ca=function(X,S,Y){
   des1=S[,3]
   juge=S[,2]
   produit=S[,1]
-  D=model.matrix(des1~produit,data=S)[,-1] # disjonctive matric
-  #des 1 quand prod est noté sinon 0
+  D=model.matrix(des1~produit,data=S)[,-1] # disjonctive matrix
   cc=cancor(E,D)
-
-  # calculer les facteurs canoniques norm´es de l’espace
-  #des notes des juges nj = X*xcoefj/II xcoefj II
-
   norm.xcoef=cc$xcoef%*%diag(rep(1,ncol(cc$xcoef))/sqrt(apply(cc$xcoef^2,2,sum)))
-  eta=data.frame(as.matrix(E)%*%norm.xcoef) # attention centrage <=> chgt Intercept
+  eta=data.frame(as.matrix(E)%*%norm.xcoef)
   names(eta)=paste('F',1:ncol(eta),sep='')
 
   mean.fact=aggregate(eta,by=list(produit),mean)
   names(mean.fact)[1]="Produit"
   names(X)[1]="Produit"
 
-  intersect(names(X),names(mean.fact)) # by=produit
+  intersect(names(X),names(mean.fact)) # by=product
   map=cbind.data.frame(X,mean.fact[,-1],Y)
 
   F1 = map$F1
@@ -28,6 +23,10 @@ map.with.ca=function(X,S,Y){
 
   return(list(F1=F1,F2=F2))
 }
+
+
+
+
 
 
 
