@@ -1,7 +1,7 @@
 # predict scores with bayes mcmcpack
 
 predict.scores.bayes=function(Y,discretspace,map,
-                              formula="~I(F1*F1)+I(F2*F2)+F1*F2",burnin = 1000,
+                              formula_bayes, burnin = 1000,
                               mcmc = 2000,verbose=0,seed = NA, beta.start = NA,
                               b0 = 0, B0 = 0, c0 = 0.001, d0 = 0.001, sigma.mu = NA,
                               sigma.var = NA){
@@ -12,13 +12,13 @@ predict.scores.bayes=function(Y,discretspace,map,
   pred.conso=preference=matrix(0,nrow(discretspace),ncol(Y))
   nb.NA=vector("list",ncol(Y))
   pos.NA=vector("list",ncol(Y))
-  ## Firts we preform all regressions
+  ## First we preform all regressions
   nbconsos=c()
   for(j in 1:ncol(Y)){
     print(j)
     dt=cbind.data.frame(Y[,j],map)
     colnames(dt)[1]="Conso"
-    modele=as.formula(paste("Conso",formula))
+    modele=as.formula(paste("Conso",formula_bayes))
 
     dt.list=list(Conso=dt$Conso,F1=dt$F1,F2=dt$F2)
 
@@ -28,16 +28,13 @@ predict.scores.bayes=function(Y,discretspace,map,
                           sigma.var =  sigma.var )
     discretspace2=cbind.data.frame(rep(1,nrow(discretspace)),discretspace)
     colnames(discretspace2)[1]="y"
-    formula2=paste("y",formula,sep="")
+    formula2=paste("y",formula_bayes,sep="")
     m=lm(formula2,data=discretspace2)
 
     mod.mat=model.matrix(m)
     p=ncol(mod.mat)
     pred1=regs[[j]][,-(p+1)]%*%t(mod.mat)
-    #eps1<-mvrnorm(dim(pred1)[2],mu = rep(0,dim(pred1)[1]),Sigma = diag(regs[[j]][,p+1]))
-    #eps1=t(eps1)
 
-    #pred1a=pred1+eps1
     x=pred1
     pred1a=x
     pred.conso[,j]=colMeans(pred1a,na.rm=T)
