@@ -1,7 +1,6 @@
-# EPM performing
 
-PrefMap <-function (Y,X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
-                    dimredumethod=1, predmodel=1, nbpoints=50,
+
+PrefMap <-function (Y,X,S,axis=c(1,2),formula, dimredumethod=1, predmodel=1, nbpoints=50,
                     pred.na =FALSE, graph.pred =FALSE, graph.map =TRUE,
                     graph.map.3D =FALSE){
 
@@ -32,9 +31,9 @@ PrefMap <-function (Y,X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
   discretspace=discrete.function(map = map)
 
   if(predmodel==1)  reg<-predict.scores.lm(Y = Y,formula = formula,discretspace = discretspace,map = map)
-  if(predmodel==2)  reg<-predict.scores.gam(Y = Y,formula = formula,discretspace = discretspace,map = map)
-  if(predmodel==3)  reg<-predict.scores.glmulti(Y = Y,formula = formula,discretspace = discretspace,map = map)
-  if(predmodel==4)  reg<-predict.scores.bayes(Y = Y,formula = formula,discretspace = discretspace,map = map)
+  if(predmodel==2)  reg<-predict.scores.gam(Y = Y,formula_gam = formula,discretspace = discretspace,map = map)
+  if(predmodel==3)  reg<-predict.scores.glmulti(Y = Y,formula_glm = formula,discretspace = discretspace,map = map)
+  if(predmodel==4)  reg<-predict.scores.bayes(Y = Y,formula_bayes = formula,discretspace = discretspace,map = map)
 
   z=rowMeans(reg$pred.conso)
   p=100*rowMeans(reg$preference)
@@ -42,9 +41,9 @@ PrefMap <-function (Y,X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
   if(pred.na==TRUE)
   {
     if(predmodel==1)  reg<-predict.scores.lm(Y = Y,pred.na=TRUE,formula = formula,discretspace = discretspace,map = map)
-    if(predmodel==2)  reg<-predict.scores.gam(Y = Y,pred.na=TRUE,formula = formula,discretspace = discretspace,map = map)
-    if(predmodel==3)  reg<-predict.scores.glmulti(Y = Y,pred.na=TRUE,formula = formula,discretspace = discretspace,map = map)
-    if(predmodel==4)  reg<-predict.scores.bayes(Y = Y,formula = formula,discretspace = discretspace,map = map)
+    if(predmodel==2)  reg<-predict.scores.gam(Y = Y,pred.na=TRUE,formula_gam = formula,discretspace = discretspace,map = map)
+    if(predmodel==3)  reg<-predict.scores.glmulti(Y = Y,pred.na=TRUE,formula_glm = formula,discretspace = discretspace,map = map)
+    if(predmodel==4)  reg<-predict.scores.bayes(Y = Y,formula_bayes = formula,discretspace = discretspace,map = map)
     z=rowMeans(reg$pred.conso, na.rm = TRUE)
     p=100*rowMeans(reg$preference, na.rm = TRUE)
 
@@ -74,13 +73,27 @@ PrefMap <-function (Y,X,S,axis=c(1,2),formula="~I(F1*F1)+I(F2*F2)+F1*F2",
 
   if (graph.map.3D == TRUE){
     plot_ly(x=graph.surfconso$x,y=graph.surfconso$y ,z=graph.surfconso$z ,  type = "surface")
-    # plot_ly(x=graph.predconso$x,y=graph.predconso$y ,z=graph.predconso$z,  type = "surface")
+
   }
   return(list(graph.pred = graph.pred, graph.map =graph.map,
               graph.map.3D = graph.map.3D, nb.NA=nb.NA,
               pos.NA=pos.NA, occur.NA=occur.NA) )
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
