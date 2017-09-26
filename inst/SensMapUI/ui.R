@@ -13,11 +13,11 @@ library(fields)
 library(plotly)
 library(mgcv)
 library(MCMCpack)
+library(glmulti)
 library(plyr)
 library(lattice)
 library(ggplot2)
 library(reshape2)
-library(glmulti)
 library(shiny)
 library(googleVis)
 library(multcomp)
@@ -54,17 +54,15 @@ shinyUI(bootstrapPage(
 
         menuItem("Consumer Data Analysis", tabName = "statdesc1", icon = icon("file-o")),
 
-        menuItem("Internal preference mapping",icon = icon("object-group"), tabName = "intermap"),
+        menuItem("Internal Preference Mapping",icon = icon("object-group"), tabName = "intermap"),
 
-        menuItem("Variation on External Preference mapping",icon = icon("random"), tabName = "epm"),
+        menuItem("External Preference Mapping",icon = icon("random"), tabName = "epm"),
 
-        menuItem("Results of models selection",icon = icon("commenting"), tabName = "resmod"),
+        menuItem("Evaluation of External Preference Mapping",icon = icon("commenting"), tabName = "resmod"),
 
-        menuItem("EPM Smoothing",icon = icon("map-signs"), tabName = "epmsmooth"),
+        menuItem("Smoothing of External Preference Mapping",icon = icon("map-signs"), tabName = "epmsmooth"),
 
-
-
-        menuItem("Comparison of maps stability", tabName = "compmap", icon = icon("cubes"))
+        menuItem("Stability of External Preference Mapping", tabName = "compmap", icon = icon("cubes"))
         )
       ),
 
@@ -466,18 +464,9 @@ shinyUI(bootstrapPage(
                   )
                   )
 
-
-
               )
 
-
-
-
-
-
-
-    ))
-
+   ))
 
 ))
 )
